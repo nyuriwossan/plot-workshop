@@ -74,10 +74,19 @@ input[type=text]:focus,textarea:focus,select:focus{outline:2px solid var(--accen
 .sw:checked{background:var(--accent)}
 .sw:checked::after{left:21px}
 /* cards */
-.area{margin-top:6px}
-.area>summary{list-style:none;cursor:pointer;font-family:var(--mincho);font-size:17px;font-weight:600;padding:10px 0 6px;display:flex;justify-content:space-between;align-items:baseline}
+.area{margin-top:10px}
+.area>summary{list-style:none;cursor:pointer;font-family:var(--mincho);font-size:17px;font-weight:600;
+  display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface2);border:1px solid var(--line);border-radius:12px;
+  -webkit-tap-highlight-color:transparent}
 .area>summary::-webkit-details-marker{display:none}
-.area>summary small{font-family:var(--sans);font-size:12px;color:var(--muted);font-weight:400}
+.area>summary small{font-family:var(--sans);font-size:12px;color:var(--muted);font-weight:400;margin-left:auto;white-space:nowrap}
+.area:not([open])>summary small::after{content:"・タップで開く";color:var(--accent);font-weight:600}
+.area>summary::after{content:"";flex:none;width:9px;height:9px;border-right:2px solid var(--accent);border-bottom:2px solid var(--accent);
+  transform:rotate(-45deg);transition:transform .15s;margin-right:4px}
+.area[open]>summary::after{transform:rotate(45deg);margin-top:-5px}
+.area[open]>summary{border-color:var(--accent)}
+.area.en>summary{border-left:4px solid var(--accent)}
+.area>summary:active{opacity:.8}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;transition:border-color .15s}
 .card.on{border-color:var(--accent)}
 .card.merged{opacity:.75}
@@ -1735,7 +1744,7 @@ function renderCards(){
     if(a==="enhance") html += `<h2 class="grp">表現を強くする <small>任意・初期はすべてオフ</small></h2><p class="lead">文章の方針を足すカードです。場面ごとの細かな技法はロアブックの役割なので、ここでは常に効かせたい方針だけを扱います。字数が足りないときは、このグループから先に短くなり、最後はオフになります。</p>`;
     const cs = DATA.cards.filter(c=>groupOf(c)===a);
     const n = cs.filter(c=>state.cards[c.id].on).length;
-    html += `<details class="area" ${a==="enhance"&&!n?"":"open"}><summary>${AREA_LABEL[a]}<small>${n}／${cs.length}</small></summary>`;
+    html += `<details class="area ${a==="enhance"?"en":""}" ${a==="enhance"&&!n?"":"open"}><summary>${AREA_LABEL[a]}<small>${n}／${cs.length}</small></summary>`;
     cs.forEach(c=>{ html += cardHtml(c, merged); });
     html += `</details>`;
   });
