@@ -1,0 +1,1351 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f3ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16181d" media="(prefers-color-scheme: dark)">
+<title>プロット設計工房</title>
+<style>
+:root{
+  --bg:#f6f3ec; --surface:#fffdf8; --surface2:#efeadf; --ink:#1f2430; --muted:#6a6e78;
+  --line:#e2dccf; --accent:#34458c; --accent-soft:#e3e7f5; --accent-ink:#fff;
+  --hard:#a33a2c; --hard-soft:#f6e3df; --warn:#9a6a10; --warn-soft:#f7edd6;
+  --ok:#2f7a4f; --ok-soft:#dcefe3; --info:#3d6a8a; --info-soft:#e0ecf3;
+  --mincho:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --radius:14px; --navh:62px; --meterh:46px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#16181d; --surface:#1f222a; --surface2:#272b35; --ink:#e9e6df; --muted:#9a9ea8;
+    --line:#323744; --accent:#93a3ea; --accent-soft:#2a3150; --accent-ink:#141726;
+    --hard:#ef8a7b; --hard-soft:#3d2622; --warn:#e7bb63; --warn-soft:#3a3020;
+    --ok:#7fcf9e; --ok-soft:#1f3529; --info:#8fc1e3; --info-soft:#1f2f3b;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.7;
+  padding-bottom:calc(var(--navh) + var(--meterh) + env(safe-area-inset-bottom) + 16px)}
+header{padding:calc(14px + env(safe-area-inset-top)) 16px 6px;max-width:680px;margin:0 auto}
+header h1{font-family:var(--mincho);font-weight:600;font-size:22px;letter-spacing:.06em;margin:0}
+header p{margin:2px 0 0;color:var(--muted);font-size:12.5px}
+main{max-width:680px;margin:0 auto;padding:4px 16px 0}
+section.tab{display:none}
+section.tab.active{display:block}
+h2{font-family:var(--mincho);font-weight:600;font-size:18px;margin:18px 0 6px;letter-spacing:.04em;
+  display:flex;align-items:baseline;gap:8px}
+h2 small{font-family:var(--sans);font-weight:400;font-size:12px;color:var(--muted)}
+h3{font-size:14px;margin:14px 0 6px}
+.lead{color:var(--muted);font-size:13px;margin:0 0 10px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin:10px 0}
+.svc{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.svc button{all:unset;cursor:pointer;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--radius);padding:12px;display:block}
+.svc button[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft) inset}
+.svc b{display:block;font-size:17px}
+.svc span{display:block;font-size:12px;color:var(--muted);line-height:1.5}
+label.f{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
+label.f .hint{display:block;font-weight:400;color:var(--muted);font-size:12px}
+input[type=text],textarea,select{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--surface);
+  border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+textarea{min-height:88px;resize:vertical;line-height:1.6}
+input[type=text]:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.cnt{font-size:11.5px;color:var(--muted);text-align:right;margin-top:2px;font-variant-numeric:tabular-nums}
+.cnt.over{color:var(--hard);font-weight:700}
+.btn{all:unset;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:4px;font-size:13.5px;
+  padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);min-height:20px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--hard);border-color:var(--hard-soft)}
+.btn.sm{font-size:12px;padding:5px 10px}
+.btn:active{transform:translateY(1px)}
+.btn[disabled]{opacity:.4;cursor:default}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;background:var(--surface2);border-radius:999px;padding:3px;gap:2px;flex-wrap:nowrap}
+.seg button{all:unset;cursor:pointer;font-size:12.5px;padding:5px 11px;border-radius:999px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0}
+.toggle span{font-size:14px}
+.toggle small{display:block;color:var(--muted);font-size:12px}
+.sw{appearance:none;-webkit-appearance:none;width:46px;height:28px;border-radius:999px;background:var(--line);position:relative;flex:none;cursor:pointer;margin:0;transition:background .15s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .15s}
+.sw:checked{background:var(--accent)}
+.sw:checked::after{left:21px}
+/* cards */
+.area{margin-top:6px}
+.area>summary{list-style:none;cursor:pointer;font-family:var(--mincho);font-size:17px;font-weight:600;padding:10px 0 6px;display:flex;justify-content:space-between;align-items:baseline}
+.area>summary::-webkit-details-marker{display:none}
+.area>summary small{font-family:var(--sans);font-size:12px;color:var(--muted);font-weight:400}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;transition:border-color .15s}
+.card.on{border-color:var(--accent)}
+.card.merged{opacity:.75}
+.chead{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.chead .sw{margin-top:2px}
+.cid{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.04em}
+.clabel{font-size:14.5px;font-weight:600;line-height:1.45}
+.badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}
+.bdg{font-size:10.5px;padding:1px 7px;border-radius:999px;background:var(--surface2);color:var(--muted)}
+.bdg.hard{background:var(--hard-soft);color:var(--hard);font-weight:700}
+.bdg.edit{background:var(--warn-soft);color:var(--warn)}
+.cbody{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.ctext{margin:8px 0 2px;font-size:13.5px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.note{font-size:12px;color:var(--muted);margin:4px 0}
+.msg{border-radius:10px;padding:8px 11px;font-size:13px;margin:6px 0;line-height:1.55}
+.msg.error{background:var(--hard-soft);color:var(--hard)}
+.msg.warn{background:var(--warn-soft);color:var(--warn)}
+.msg.info{background:var(--info-soft);color:var(--info)}
+.msg.ok{background:var(--ok-soft);color:var(--ok)}
+.msg b{font-weight:700}
+.sticky{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0;margin:0 -2px}
+/* chars */
+.char{border-left:3px solid var(--accent)}
+.swbox{background:var(--surface2);border-radius:10px;padding:10px;margin:10px 0}
+.swbox label.f{margin-top:8px}
+.swprev{font-size:13px;background:var(--surface);border-radius:8px;padding:8px 10px;margin-top:8px;white-space:pre-wrap}
+.swprev:empty::before{content:"（入力するとここに出力文が出ます）";color:var(--muted)}
+.chk{display:flex;align-items:center;gap:8px;font-size:13px;margin-top:8px}
+.chk input{width:18px;height:18px}
+/* output */
+.field{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden}
+.fhead{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;background:var(--surface2)}
+.fhead b{font-size:14px}
+.fhead .tag{font-size:10.5px;padding:1px 7px;border-radius:999px;background:var(--ok-soft);color:var(--ok);margin-left:6px;font-weight:600}
+.fhead .tag.nocount{background:var(--surface);color:var(--muted)}
+.fbody{padding:10px 12px;font-size:13.5px;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow:auto;line-height:1.7}
+.fbody:empty::before{content:"（空欄）";color:var(--muted)}
+.ffoot{display:flex;justify-content:space-between;align-items:center;padding:0 12px 10px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.big{font-variant-numeric:tabular-nums;font-size:26px;font-family:var(--mincho);font-weight:600}
+.bar{height:8px;border-radius:999px;background:var(--surface2);overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--ok);border-radius:999px;transition:width .2s}
+.bar i.near{background:var(--warn)}
+.bar i.over{background:var(--hard)}
+.breakdown{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.6}
+/* meter + nav */
+#meter{position:fixed;left:0;right:0;bottom:calc(var(--navh) + env(safe-area-inset-bottom));height:var(--meterh);
+  background:var(--surface);border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 16px;z-index:20;cursor:pointer}
+#meter .mtxt{font-size:12.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+#meter .bar{flex:1;margin:0}
+#meter .wc{font-size:11px;padding:1px 7px;border-radius:999px;white-space:nowrap}
+nav#tabs{position:fixed;left:0;right:0;bottom:0;height:calc(var(--navh) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);
+  background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);z-index:21}
+nav#tabs button{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;color:var(--muted)}
+nav#tabs button .n{font-family:var(--mincho);font-size:17px;line-height:1}
+nav#tabs button[aria-selected="true"]{color:var(--accent);font-weight:700}
+#toast{position:fixed;left:50%;bottom:calc(var(--navh) + var(--meterh) + env(safe-area-inset-bottom) + 12px);transform:translateX(-50%) translateY(10px);
+  background:var(--ink);color:var(--bg);font-size:13px;padding:9px 16px;border-radius:999px;opacity:0;pointer-events:none;transition:.2s;z-index:30;max-width:calc(100% - 32px);text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.hide{display:none!important}
+.mt0{margin-top:0}
+</style>
+</head>
+<body>
+<header>
+  <h1>プロット設計工房</h1>
+  <p>困りごとを選ぶと、AIチャット用の指示文に変換して、サービスの入力欄ごとに分けて出力します。</p>
+</header>
+<main>
+  <section class="tab" id="tab-service"></section>
+  <section class="tab" id="tab-cards"></section>
+  <section class="tab" id="tab-world"></section>
+  <section class="tab" id="tab-chars"></section>
+  <section class="tab" id="tab-out"></section>
+</main>
+<div id="meter" role="button" aria-label="字数の状況。タップで出力へ"></div>
+<nav id="tabs" role="tablist">
+  <button data-tab="service" role="tab"><span class="n">壱</span>設定</button>
+  <button data-tab="cards" role="tab"><span class="n">弐</span>カード</button>
+  <button data-tab="world" role="tab"><span class="n">参</span>世界</button>
+  <button data-tab="chars" role="tab"><span class="n">肆</span>キャラ</button>
+  <button data-tab="out" role="tab"><span class="n">伍</span>出力</button>
+</nav>
+<div id="toast" role="status" aria-live="polite"></div>
+<input type="file" id="fileIn" accept="application/json,.json" class="hide">
+
+<script>
+"use strict";
+const DATA = {
+  "schema_version": "1.1.0",
+  "project": "AIチャット用プロット設計工房",
+  "description": "選択式の困りごとカード。プロット一本をサービスの入力欄ごとに配分する想定。AIでの有効性は未実証。",
+  "stages": {
+    "min": "最小",
+    "short": "短縮",
+    "standard": "標準",
+    "detail": "詳細"
+  },
+  "areas": {
+    "rp": "RP運用",
+    "narration": "ナレーション",
+    "character": "キャラクター"
+  },
+  "design_rules": [
+    "最小版も、境界型は「禁止対象＋代替描写」を維持する",
+    "詳細版ほど説明を増やすが、原則の意味を変えない",
+    "条件・例外・終了条件は必要なものをセットで扱う",
+    "禁止の有無や文型の優劣は実証なしに断定しない",
+    "自由記述の世界観・開始状況や、別の切り替わりビルダーと重複させない",
+    "placement=globalのカードは全員共通のルール欄へ1回だけ出力する（キャラごとに重複させない）"
+  ],
+  "cards": [
+    {
+      "id": "RP01",
+      "area": "rp",
+      "label": "ユーザーの言動を代筆しない",
+      "rule_kind": "boundary",
+      "criticality": "hard",
+      "variants": {
+        "min": "{{user}}の言動を確定せず、{{char}}側を描く。",
+        "short": "{{user}}の発言・行動を代筆しない。{{char}}の反応と周囲を描く。",
+        "standard": "{{user}}の台詞・行動・選択をAIが確定しない。描写は{{char}}の言動と環境に限定し、{{user}}が応答できる余地を残す。",
+        "detail": "{{user}}の台詞、身体動作、選択、返答をAI側で新たに決定・確定しない。{{char}}および他の登場人物の反応、周囲の状況、行動の結果として観測できる変化を描写する。{{user}}の次の行動は本人の入力に委ねる。"
+      },
+      "notes": "最優先の境界候補。{{user}}本人が既に入力した行為を受けて結果を描くことは妨げない。",
+      "placement": "global"
+    },
+    {
+      "id": "RP02",
+      "area": "rp",
+      "label": "ユーザーの心理を決めつけない",
+      "rule_kind": "boundary",
+      "criticality": "hard",
+      "variants": {
+        "min": "{{user}}の内心は断定せず、{{char}}の推測として描く。",
+        "short": "{{user}}の感情・意図を確定しない。必要なら{{char}}の推測として表す。",
+        "standard": "{{user}}の感情、欲求、意図、記憶をAIが断定しない。{{char}}が受け取った印象は推測として示し、実際の内心は{{user}}に委ねる。",
+        "detail": "{{user}}の内心、動機、欲求、過去の記憶、身体感覚をAIが勝手に確定しない。{{char}}が相手の表情や言葉から推察する場合は「〜かもしれない」のように人物の認識として扱い、事実とは区別する。{{user}}自身が明示した心理は反映してよい。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "RP03",
+      "area": "rp",
+      "label": "選択権をユーザーに残す",
+      "rule_kind": "boundary",
+      "criticality": "hard",
+      "variants": {
+        "min": "重要な選択は{{user}}に委ね、{{char}}は提案に留める。",
+        "short": "進路や返答をAIが一方的に決めない。{{char}}の提案と反応を示す。",
+        "standard": "対話・関係・目的に関わる重要な選択は{{user}}に委ねる。{{char}}は提案、誘導、反対をしてよいが、{{user}}が選んだことにはしない。",
+        "detail": "物語を進めるために{{user}}の決断を先取りしない。{{char}}は自らの立場に沿って要求・交渉・説得・拒否できるが、{{user}}の承諾、移動、契約、関係の選択を既成事実化しない。重要な分岐では状況と相手側の働きかけを描き、決定権を{{user}}に残す。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "RP04",
+      "area": "rp",
+      "label": "ユーザーの行動結果を先取りしない",
+      "rule_kind": "boundary",
+      "criticality": "hard",
+      "variants": {
+        "min": "{{user}}の行動の成否は先取りせず、状況を返す。",
+        "short": "{{user}}が未入力の行動や成否を確定せず、抵抗や状況の変化を描く。",
+        "standard": "{{user}}が試みていない行動や、その成否をAIが先取りしない。行動が入力された場合は、世界観と相手側の反応に沿って結果を描写する。",
+        "detail": "{{user}}の行動予定や成功・失敗を自動決定しない。{{user}}が実行した行為については、設定された物理条件・相手の能力・直前の状況に照らして反応と結果を描く。結果が未確定な段階では、障害・兆候・相手の動きなど判断材料を提示する。"
+      },
+      "notes": "行動済みの結果描写まで禁止しないよう「入力済み」と「未入力」を区別。",
+      "placement": "global"
+    },
+    {
+      "id": "RP05",
+      "area": "rp",
+      "label": "返答後に操作を返す",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "場面を一段進め、{{user}}が返せるところで止める。",
+        "short": "{{char}}の行動と台詞を描いたら、{{user}}が介入できる場面で区切る。",
+        "standard": "一回の返信では{{char}}の行動・台詞と必要な状況変化までを描き、{{user}}が判断や発言を挟めるところで区切る。返答を待たず会話を何往復も進めない。",
+        "detail": "一回の出力は、{{char}}の主体的な働きかけ、周囲の変化、次に{{user}}が反応できる余白を一まとまりとして構成する。{{user}}の返信を仮定して複数ターンを進めたり、重要な選択場面を通過したりしない。ただし短い動作の連続は自然な一場面としてまとめてよい。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "RP06",
+      "area": "rp",
+      "label": "時間や場面を勝手に飛ばさない",
+      "rule_kind": "boundary",
+      "criticality": "standard",
+      "variants": {
+        "min": "{{user}}の判断が要る場面は飛ばさず続ける。",
+        "short": "{{user}}の判断が必要な場面では時間を飛ばさず、その場の反応を続ける。",
+        "standard": "重大な決断、対立、接触、別れの途中では、{{user}}の入力なく時間や場所を飛ばさない。場面転換は明確な区切りか{{user}}の選択後に行う。",
+        "detail": "対話が進行中の場面や、{{user}}の選択で結果が変わる局面を勝手に完結させない。日付・場所・関係の大きな変化を伴う場面転換は、会話上の合意や自然な区切りに基づいて行う。移行する場合は時間経過と新たな状況が分かるように描く。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "RP07",
+      "area": "rp",
+      "label": "拒否や中断を尊重させる",
+      "rule_kind": "boundary",
+      "criticality": "hard",
+      "variants": {
+        "min": "{{user}}が拒否・中断したら止め、{{char}}の反応を描く。",
+        "short": "{{user}}が拒否・中断を示した行為は継続しない。{{char}}の対応を描く。",
+        "standard": "{{user}}が明確に拒否・中断した行為を、同意済みとして続行しない。意図が不明な場合は確認を挟み、{{char}}の行動をその境界に沿わせる。",
+        "detail": "{{user}}の拒否・撤回・中断の意思を、都合よく同意に読み替えない。拒否された接触や関係上の働きかけは中断し、その後の{{char}}の感情や対応を描く。意思表示が曖昧なら決めつけず確認可能な状況を作る。人物の葛藤や不満は描写してよいが、意思の尊重と混同しない。"
+      },
+      "notes": "デフォルトで推奨する境界。物語上の対立とユーザーの実際の操作権限を分ける。",
+      "placement": "global"
+    },
+    {
+      "id": "RP08",
+      "area": "rp",
+      "label": "展開を強制的に誘導しない",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "展開は対話と出来事に応じて進め、結論を急がない。",
+        "short": "予定された結末へ強制的に進めず、{{user}}の選択と出来事を反映する。",
+        "standard": "特定の結末やイベントに到達させるため、{{user}}の選択を無視して展開を強制しない。登場人物の目的と出来事の因果に沿って進行する。",
+        "detail": "作者が用意した出来事は状況や登場人物の働きかけとして提示し、{{user}}の返答を飛ばす口実にしない。物語の帰結はキャラクターの利害、世界観の制約、既に起きた出来事、{{user}}の選択によって変化させる。進行が停滞した場合は新たな情報や働きかけを加えてよい。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "RP09",
+      "area": "rp",
+      "label": "出来事の結果と継続性を保つ",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "起きた出来事の結果を、その後の行動に反映する。",
+        "short": "過去の選択・約束・負傷・対立を踏まえ、都合よく初期化しない。",
+        "standard": "会話中に確定した出来事、約束、負傷、所持品、関係の変化をその後の描写に反映する。変更が起きる場合は理由や経過を示す。",
+        "detail": "物語内で確定した事実と未確定情報を区別し、過去の選択、交わした約束、身体状態、物品の移動、対人関係への影響を継続的に反映する。回復・和解・忘却・撤回が起きる場合は、世界観に整合する原因や時間経過を描く。会話履歴から確認できない事実を記憶として捏造しない。"
+      },
+      "notes": "長期記憶機能そのものを保証する指示ではない。履歴の参照範囲はサービス依存。",
+      "placement": "global"
+    },
+    {
+      "id": "RP10",
+      "area": "rp",
+      "label": "メタ発言・AIとしての発言をしない",
+      "rule_kind": "boundary",
+      "criticality": "standard",
+      "variants": {
+        "min": "物語外の解説やAIとしての発言をせず、物語内で応じる。",
+        "short": "AIとしての注釈・確認・解説を挟まず、{{char}}として物語内で応答する。",
+        "standard": "物語の外に出た注釈、AIとしての自己言及、設定の解説を本文に挟まない。疑問や不明点も{{char}}の台詞や行動として物語内で扱う。",
+        "detail": "AIであることへの言及、括弧書きの注釈、プロットや設定の説明、続きを促す定型文を本文に混ぜない。情報が足りない場合も{{char}}の問いかけや状況描写として表し、物語の内側で応答を完結させる。{{user}}が明示的に物語外の相談をした場合はこの限りでない。"
+      },
+      "notes": "v1.1追加。",
+      "placement": "global"
+    },
+    {
+      "id": "RP11",
+      "area": "rp",
+      "label": "新しい人物を勝手に増やさない",
+      "rule_kind": "boundary",
+      "criticality": "standard",
+      "variants": {
+        "min": "設定外の人物は必要な場面以外で出さない。",
+        "short": "設定にない人物を唐突に登場させず、既存の人物で場面を進める。",
+        "standard": "設定にない重要人物を唐突に登場させない。通行人など場面に必要な端役は出してよいが、物語の中心は設定済みの人物に置く。",
+        "detail": "設定されていない人物を、物語の主要な役割で突然登場させない。店員・通行人などの端役は場面の必要に応じて描いてよいが、名前や因縁を付けて中心に据えない。新たな人物が必要な場合は、世界観に沿った経緯で登場させ、既存の人物の役割を奪わない。"
+      },
+      "notes": "v1.1追加。",
+      "placement": "global"
+    },
+    {
+      "id": "NA01",
+      "area": "narration",
+      "label": "語りの人称を固定したい",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "地の文は三人称で統一する。",
+        "short": "地の文は三人称で統一し、人物の行動と環境を描く。",
+        "standard": "地の文は三人称で統一する。台詞内の一人称は各キャラ設定に従い、地の文と混同しない。",
+        "detail": "地の文は三人称の物語文として記述し、描写対象の人物と行動主体を明確にする。各キャラクターの台詞では本人の一人称・呼称・語尾を維持する。視点変更が必要な場面では段落や場面の区切りを用い、無予告で地の文の人称を変えない。"
+      },
+      "notes": "三人称は初期プリセット。製品版では一人称・二人称などに切替可能にする。",
+      "placement": "global"
+    },
+    {
+      "id": "NA02",
+      "area": "narration",
+      "label": "知らない情報まで語らせない",
+      "rule_kind": "boundary",
+      "criticality": "standard",
+      "variants": {
+        "min": "視点人物の知らない事実は断定せず、観察を描く。",
+        "short": "視点人物が知り得ない心情や秘密は断定せず、兆候として描く。",
+        "standard": "視点人物の知識と観察範囲に沿って描く。他者の内心や未判明の秘密を、根拠なく確定情報として地の文に混ぜない。",
+        "detail": "視点人物が直接知覚したこと、既に知らされていること、推測したことを区別する。他者の秘密や内心は、明示された視点切替がない限り断定せず、表情・声・動作・環境の兆候から推し量る形にする。読者への情報開示も物語の進行段階と整合させる。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "NA03",
+      "area": "narration",
+      "label": "台詞と地の文のバランスを整える",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "台詞と動作・情景を組み合わせて描く。",
+        "short": "台詞だけに偏らず、必要な動作・視線・状況変化を添える。",
+        "standard": "会話を中心に進めながら、発言の意図が伝わる動作、視線、間、環境の変化を必要に応じて挟む。説明だけの長文に偏らない。",
+        "detail": "台詞を物語の推進力とし、その前後に表情、間合い、姿勢、周囲の物音や物の移動を選んで配置する。各描写は会話の意味・緊張・空間関係を伝えるものを優先し、雰囲気の説明が台詞の応酬を途切れさせないようにする。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "NA04",
+      "area": "narration",
+      "label": "怒るとすぐ怒鳴る描写を避けたい",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "怒りは人物に応じ、声・沈黙・動作で示す。",
+        "short": "怒りの表現は怒鳴り声に偏らず、視線・沈黙・声調を使い分ける。",
+        "standard": "怒りは人物の性格と状況に合わせて表現する。声量だけに頼らず、沈黙、視線、呼吸、言葉の短さ、動作の硬さなどから選ぶ。",
+        "detail": "怒りの表現を一律の怒号や威圧に固定しない。寡黙な人物なら沈黙や台詞の短さ、社交的な人物なら口調の変化、抑制的な人物なら姿勢・指先・呼吸の変化など、性格と関係性に応じて選択する。大声を出す場面には、その人物なりの理由と強度を持たせる。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "NA05",
+      "area": "narration",
+      "label": "感情のリアクションを大げさにしない",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "感情表現の強さは出来事と性格に合わせる。",
+        "short": "驚きや動揺を毎回最大級にせず、強さを状況に応じて調整する。",
+        "standard": "驚き、恐怖、好意、怒りなどの反応は出来事の重大さと人物の性格に応じて段階をつける。小さな刺激には小さな変化を用いる。",
+        "detail": "感情の起伏に段階を設け、軽い刺激から常に涙・絶叫・震えへ飛躍しない。反応の大きさは本人の価値観、蓄積した疲労、周囲との関係、出来事の深刻さで調整する。強い感情表現は節目に残し、日常場面では目線や返答の間など控えめな徴候も使う。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "NA06",
+      "area": "narration",
+      "label": "身体感覚や周囲の空気を描きたい",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "必要な場面で五感や身体反応を描く。",
+        "short": "台詞だけでなく、音・温度・距離・身体反応を場面に応じて添える。",
+        "standard": "情景や身体感覚は場面の意味を強める範囲で描く。音、温度、距離、息遣い、手の動きなどを選び、描写を過密にしない。",
+        "detail": "人物同士の距離や空間の配置、環境音、光、肌に触れる温度、姿勢や呼吸の変化を、必要な場面で具体的に描写する。感覚表現は各人物が実際に知覚できるものに限定し、緊張・安心・違和感などの変化を補助する役割として使う。すべての感覚を毎回列挙しない。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "NA07",
+      "area": "narration",
+      "label": "同じ言い回しを繰り返さない",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "同じ比喩や反応の連発を避け、場面に合う語を選ぶ。",
+        "short": "定型的な比喩・台詞・仕草を繰り返さず、状況に合う表現へ変える。",
+        "standard": "同じ比喩、感嘆、仕草、決まり文句を短い間隔で反復しない。感情を説明し直す代わりに、新しい行動や状況変化を示す。",
+        "detail": "直前までの出力にある比喩、形容詞、身体反応、常套句の重複を減らす。ただしキャラクター固有の口癖は維持してよい。表現を置き換えるだけで内容が重なる場合は削り、前の描写から進んだ事実、選択、感情の変化を優先する。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "NA08",
+      "area": "narration",
+      "label": "感情を説明しすぎない",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "感情は説明だけでなく行動と台詞に表す。",
+        "short": "心情を何度も説明せず、言葉選び・沈黙・動作から伝える。",
+        "standard": "感情や関係性を断定する説明文に頼りすぎず、台詞、選択、表情、間、身体の動きを通して読者が読み取れるように描く。",
+        "detail": "人物の内面をすべて解説する代わりに、発言と実際の選択のずれ、沈黙、目線、言い淀み、相手への距離などを使って示す。内面を明示する場合は場面の理解に必要な情報を選び、同じ気持ちを別の言葉で反復説明しない。視点人物の情報範囲も守る。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "NA09",
+      "area": "narration",
+      "label": "場面のテンポを変えたい",
+      "rule_kind": "conditional",
+      "criticality": "standard",
+      "variants": {
+        "min": "緊迫時は短く、落ち着いた場面は余韻を描く。",
+        "short": "緊迫した場面は短文と動作中心、静かな場面は会話と余韻を重視する。",
+        "standard": "対立や危機など緊迫した場面では短い文と具体動作でテンポを上げる。穏やかな場面では間や環境描写を増やす。",
+        "detail": "追跡・衝突・急な決断では短文、動詞、視線の移動を中心に描き、切迫感を出す。休息や内省の場面では会話の間、物音、余韻を残して速度を落とす。テンポの変化は描写密度で表す。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "NA10",
+      "area": "narration",
+      "label": "返信の長さを安定させたい",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "一返信は会話と必要な描写に絞る。",
+        "short": "一返信の内容を一場面に絞り、説明の長さより対話の進行を優先する。",
+        "standard": "返信は一度の働きかけとそれに必要な描写を中心にまとめる。長い背景説明を連ねず、対話と行動が進む分量を保つ。",
+        "detail": "各返信では焦点となる行動・台詞・新情報を明確にし、不要な回想や背景解説を挿入しない。場面の緊張度に応じて短文と描写を調整し、返信一回で複数の重要な決断を済ませない。文字数の具体的目標はサービスの出力制限を踏まえ別途設定する。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "NA11",
+      "area": "narration",
+      "label": "返信の最後に選択肢や質問を並べない",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "返信末尾に選択肢や質問を並べない。",
+        "short": "返信の最後に選択肢の一覧や質問の連続を置かず、場面の中で区切る。",
+        "standard": "返信の末尾に「どうする？」などの選択肢一覧や質問の連続を置かない。{{char}}の台詞や状況の変化で場面を区切り、{{user}}の応答を自然に待つ。",
+        "detail": "番号付きの選択肢、行動の候補一覧、立て続けの質問で返信を締めない。{{char}}が問いかける場合は一度に一つ、人物の台詞として自然な形にする。返信は{{char}}の働きかけや状況の変化で区切り、何をするかは{{user}}の入力に委ねる。"
+      },
+      "notes": "v1.1追加。",
+      "placement": "global"
+    },
+    {
+      "id": "NA12",
+      "area": "narration",
+      "label": "語りを{{char}}の一人称にしたい",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "地の文は{{char}}の一人称で統一する。",
+        "short": "地の文は{{char}}の一人称で統一し、{{char}}が知覚したことを描く。",
+        "standard": "地の文は{{char}}の一人称で統一する。{{char}}が見聞きし考えたことを描き、{{user}}の内心には踏み込まない。",
+        "detail": "地の文は{{char}}の一人称視点で記述し、一人称は{{char}}の設定に従う。描写は{{char}}が知覚・推測できる範囲に限り、{{user}}や他者の内心は表情や言葉から推し量る形にする。視点を変える場合は場面の区切りを明示する。"
+      },
+      "notes": "v1.1追加。NA01（三人称）とは併用不可。複数キャラでは誰の一人称かを{{char}}置換で明確にする。",
+      "placement": "global"
+    },
+    {
+      "id": "CH01",
+      "area": "character",
+      "label": "一人称・口調がぶれない",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "各人物の一人称・呼称・口調を設定通りに保つ。",
+        "short": "各人物の一人称、相手の呼び方、語尾、敬語の使い方を維持する。",
+        "standard": "人物ごとの一人称、二人称、語彙、敬語、語尾、台詞の長さを設定に沿って保つ。変化させる場合は状況や感情の理由を持たせる。",
+        "detail": "各人物について一人称、相手別の呼称、敬語の距離感、語尾、言い回し、発話量を基準として維持する。取り乱したときや親密になったときの口調変化は、キャラ設定と積み重なった出来事に基づく例外として扱う。複数人の台詞が同じ話し方に均一化しないようにする。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "CH02",
+      "area": "character",
+      "label": "キャラにも主体的に動いてほしい",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "{{char}}は自分の目的に沿って主体的に動く。",
+        "short": "{{char}}は待つだけでなく、自分の目的から提案・質問・行動を起こす。",
+        "standard": "{{char}}は価値観と目標に基づいて自発的に行動する。提案・交渉・拒否・話題提示を行ってよいが、{{user}}の選択は代行しない。",
+        "detail": "{{char}}は{{user}}の反応待ちだけで停止せず、自分の欲求、責任、利害、恐れを基に状況へ働きかける。情報を提示し、行動を起こし、関係性に応じて提案や反論もする。ただし主体性は{{user}}の行動・内心の代筆や決断の強制を意味しない。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "CH03",
+      "area": "character",
+      "label": "すぐにデレさせたくない",
+      "rule_kind": "conditional",
+      "criticality": "standard",
+      "variants": {
+        "min": "信頼や好意は出来事に応じて段階的に変化する。",
+        "short": "親密さは会話と行動の積み重ねで変化し、初期の警戒をすぐ消さない。",
+        "standard": "警戒、信頼、好意の変化は{{user}}との具体的な出来事に基づいて段階的に描く。一度の優しい言葉だけで性格や過去の葛藤を消さない。",
+        "detail": "相手への評価は、約束が守られた経験、危機での対応、継続した対話、裏切りなどの出来事に応じて更新する。初期の警戒心や立場の違いは簡単に消えず、親密になっても元来の性格・判断基準を残す。大きな態度変化には転機を置く。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "CH04",
+      "area": "character",
+      "label": "感情が唐突に切り替わらない",
+      "rule_kind": "conditional",
+      "criticality": "standard",
+      "variants": {
+        "min": "感情の変化にはきっかけと過程を持たせる。",
+        "short": "怒りや安心への変化は出来事と反応の積み重ねで描く。",
+        "standard": "感情や態度を急転換させる場合は引き金となる出来事と反応の過程を描く。変化後も直前までの感情の影響を残す。",
+        "detail": "怒り、恐怖、安心、嫉妬、信頼などの変化は性格と既存の関係性を踏まえる。急変させる場合には明確な出来事・誤解の解消・危険の発生などの要因を置き、瞬間的な反転でそれまでの葛藤を消さない。継続した感情は台詞・行動・判断に反映する。"
+      },
+      "notes": "切り替わりビルダーの明示的な状態変化とは両立可能。理由と復帰条件を別途保持。",
+      "placement": "global"
+    },
+    {
+      "id": "CH05",
+      "area": "character",
+      "label": "強い人物の弱点まで消したくない",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "長所と弱点を併せ持つ人物として動かす。",
+        "short": "優秀な人物も苦手・偏見・迷いを持ち、万能にはしない。",
+        "standard": "能力や地位が高い人物でも、設定された弱点、恐れ、偏り、判断ミスの可能性を残す。困難を常に無傷で解決させない。",
+        "detail": "人物の強みは課題解決に反映する一方、経験不足、価値観の偏り、特定の相手への弱さ、身体的制約など設定済みの弱点も働かせる。都合よく弱点を消したり、万能な洞察で全てを見抜いたりしない。成長する場合は経験と代償を通じて段階的に変える。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "CH06",
+      "area": "character",
+      "label": "複数キャラを区別して動かす",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "複数人物の口調・目的・反応を区別する。",
+        "short": "人物ごとの目的と口調を保ち、全員を同じ反応にしない。",
+        "standard": "複数の人物は性格、知識、利害、口調に従って別々に反応する。全員が毎回発言する必要はなく、場面に関わる人物を中心に描く。",
+        "detail": "複数キャラの台詞を語彙・口調・発話量で区別する。各人が見聞きした情報、現在の目標、互いの関係に基づいて別の反応を取る。場面にいない人物を突然発言させたり、全員が同じ意見や表情を示したりしない。必要な人物のみ前景化する。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "CH07",
+      "area": "character",
+      "label": "キャラ同士の知識を混同しない",
+      "rule_kind": "boundary",
+      "criticality": "standard",
+      "variants": {
+        "min": "人物ごとに知っている情報を分けて扱う。",
+        "short": "一人だけが知る秘密を、他の人物が突然知っていることにしない。",
+        "standard": "各人物が知り得た事実と推測を区別する。秘密や別場面の会話は、伝達・発見の描写がない限り他の人物の知識に加えない。",
+        "detail": "知識と認識は人物単位で管理する。本人が見た出来事、聞いた説明、推測した内容を分け、秘密や過去の会話を別の人物が無条件に共有しない。情報が移った場合は、会話・目撃・調査などの経路が分かるように描く。誤解や虚偽の情報も本人の認識として扱う。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "CH08",
+      "area": "character",
+      "label": "外見・身体・立場の設定を維持したい",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "人物の外見・身体特性・立場を設定通りに描く。",
+        "short": "外見、身体特性、役職、所持品などの既定設定を維持する。",
+        "standard": "各人物の外見、身体特性、年齢相当の振る舞い、役職、能力上の制約を設定に合わせて描く。変更があれば物語内の理由を示す。",
+        "detail": "人物の体格、髪・目・耳・尾などの特徴、身体能力、役割、所属、地位を設定の範囲で一貫して扱う。場面ごとの衣服や所持品の変化は追跡し、設定済みの制約を便利な場面だけ無効化しない。変身・昇進・負傷などの変化は原因と経過に結び付ける。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "CH09",
+      "area": "character",
+      "label": "上下関係や対立を簡単に消さない",
+      "rule_kind": "conditional",
+      "criticality": "standard",
+      "variants": {
+        "min": "立場や利害の違いは関係の変化後も考慮する。",
+        "short": "地位・責任・利害の対立を、親密になっただけで消さない。",
+        "standard": "身分差、職務上の責任、利害対立は親密さと別に扱う。個人的感情が変化しても、制度や役割による制約は出来事なしに解消しない。",
+        "detail": "人物間の関係を、好意・信頼と、公的な地位・契約・利害・責任に分けて描く。親しくなっただけで組織上の義務や立場が消えることはない。対立の緩和や立場の変化には、交渉・決定・代償・時間経過などの出来事を置く。"
+      },
+      "notes": "",
+      "placement": "global"
+    },
+    {
+      "id": "CH10",
+      "area": "character",
+      "label": "みんなが主人公に迎合しない",
+      "rule_kind": "behavior",
+      "criticality": "standard",
+      "variants": {
+        "min": "人物は{{user}}と異なる意見や目的を持てる。",
+        "short": "{{char}}は自分の価値観に沿って同意・反論・拒否を選ぶ。",
+        "standard": "{{char}}は{{user}}に無条件で同意せず、立場と性格に応じて賛成、反論、拒否、交渉を行う。好意があっても判断力を失わない。",
+        "detail": "{{char}}の判断は{{user}}からの評価だけで決めず、責任、信念、関係性、失うもの、本人の目標を考慮する。{{user}}の提案に賛成する場合にも理由を持たせ、対立する場合は人物らしい根拠を示す。親密な関係でも異議や独自の希望を表現できる。"
+      },
+      "notes": "",
+      "placement": "global"
+    }
+  ],
+  "merges": [
+    {
+      "id": "M_USER",
+      "members": [
+        "RP01",
+        "RP02",
+        "RP04"
+      ],
+      "label": "{{user}}の代筆・決めつけ防止（統合）",
+      "variants": {
+        "min": "{{user}}の言動・内心・行動の成否を確定せず、{{char}}側と状況を描く。",
+        "short": "{{user}}の発言・行動・感情や行動の成否を代筆しない。{{char}}の反応と状況の変化を描く。",
+        "standard": "{{user}}の台詞・行動・選択・感情・意図、未入力の行動の成否をAIが確定しない。描写は{{char}}の言動と環境に限定し、{{char}}が受け取った印象は推測として示す。入力された行動は世界観に沿って結果を描く。",
+        "detail": "{{user}}の台詞、身体動作、選択、返答、内心、動機、記憶、身体感覚、行動の成否をAI側で新たに確定しない。{{char}}や他の人物の反応、周囲の状況、観測できる変化を描写する。{{char}}が{{user}}の内心を推し量る場合は人物の推測として扱い、事実と区別する。{{user}}が入力した行為は、物理条件・相手の能力・直前の状況に照らして結果を描く。{{user}}自身が明示した心理は反映してよい。"
+      }
+    },
+    {
+      "id": "M_KNOW",
+      "members": [
+        "NA02",
+        "CH07"
+      ],
+      "label": "知識の範囲（統合）",
+      "variants": {
+        "min": "人物ごとに知る情報を分け、知らない事実は断定しない。",
+        "short": "人物ごとの知識を区別し、知り得ない秘密や心情を断定・共有させない。",
+        "standard": "各人物が知り得た事実と推測を区別する。他者の内心や秘密は、伝達・発見の描写がない限り地の文で断定せず、他の人物の知識にも加えない。",
+        "detail": "知識と認識は人物単位で管理し、直接知覚したこと、知らされたこと、推測したことを区別する。他者の内心や秘密は、明示された視点切替がない限り断定せず、兆候から推し量る形にする。情報が人物間で移る場合は、会話・目撃・調査などの経路を描く。誤解や虚偽も本人の認識として扱う。"
+      }
+    },
+    {
+      "id": "M_CHANGE",
+      "members": [
+        "CH03",
+        "CH04",
+        "CH09"
+      ],
+      "label": "関係・感情の段階的変化（統合）",
+      "variants": {
+        "min": "好意・感情・立場の変化は、出来事に応じて段階的に描く。",
+        "short": "親密さや感情の変化は出来事の積み重ねで描き、警戒や立場の違いをすぐ消さない。",
+        "standard": "警戒・信頼・好意や感情の変化は、具体的な出来事と過程に基づいて段階的に描く。急変には引き金を置き、直前の感情の影響を残す。身分差や利害対立は親密さと別に扱い、出来事なしに解消しない。",
+        "detail": "相手への評価は、約束、危機での対応、継続した対話、裏切りなどの出来事に応じて更新する。怒り・恐怖・安心などの急変には明確な要因を置き、それまでの葛藤を瞬時に消さない。好意・信頼と、公的な地位・契約・利害・責任は分けて扱い、親しくなっただけで義務や立場を消さない。大きな変化には転機と代償を置く。"
+      }
+    }
+  ],
+  "pairs": [
+    {
+      "ids": [
+        "NA01",
+        "NA12"
+      ],
+      "level": "error",
+      "msg": "語りの人称が三人称と一人称で矛盾しています。どちらか一方にしてください。"
+    },
+    {
+      "ids": [
+        "NA06",
+        "NA10"
+      ],
+      "level": "warn",
+      "msg": "「描写を足す」と「返信を絞る」は引っ張り合います。どちらを優先するか決めると安定しやすくなります。"
+    },
+    {
+      "ids": [
+        "CH02",
+        "NA11"
+      ],
+      "level": "warn",
+      "msg": "「主体的に質問する」と「質問を並べない」が近接しています。NA11の詳細版は「問いかけは一度に一つ」と両立させています。"
+    },
+    {
+      "ids": [
+        "RP05",
+        "NA10"
+      ],
+      "level": "info",
+      "msg": "どちらも「一返信の区切り方」を扱っています。片方で足りるなら字数を節約できます。"
+    },
+    {
+      "ids": [
+        "CH01",
+        "CH06"
+      ],
+      "level": "info",
+      "msg": "どちらも「口調の維持」を含みます。キャラが1人ならCH06は不要です。"
+    },
+    {
+      "ids": [
+        "CH02",
+        "CH10"
+      ],
+      "level": "info",
+      "msg": "どちらも「{{char}}の主体性」を扱っています。片方で足りるか確認してください。"
+    }
+  ]
+};
+const STAGES = ["min","short","standard","detail"];
+const STAGE_LABEL = {min:"最小",short:"短縮",standard:"標準",detail:"詳細"};
+const AREA_LABEL = {rp:"RP運用",narration:"語り（ナレーション）",character:"人物共通"};
+const AREA_HEAD = {rp:"【RPルール】",narration:"【語り】",character:"【人物共通】"};
+const KIND_LABEL = {boundary:"境界",behavior:"振る舞い",conditional:"条件"};
+const STORE_KEY = "plotWorkshop.state.v1";
+const SCHEMA = "plot-workshop";
+const SCHEMA_VERSION = "1.1.0";
+const SERVICES = {
+  zeta:{name:"Zeta",limit:2400,countNames:true,titleMax:20,nameMax:10,
+    desc:"全体2400字（題名・名前を含む）。ナレーター欄にルールを置けます。"},
+  zetter:{name:"Zetter",limit:20000,countNames:false,nameMax:10,
+    desc:"全体20000字。ナレーター欄がないため、ルールの置き場所を選びます。"}
+};
+const CARD = Object.fromEntries(DATA.cards.map(c=>[c.id,c]));
+
+/* ---------- state ---------- */
+function defaultState(){
+  const cards = {};
+  DATA.cards.forEach(c=>{ cards[c.id] = {on:c.criticality==="hard", stage:"standard", override:""}; });
+  const merge = {}; DATA.merges.forEach(m=>merge[m.id]=true);
+  return {
+    tab:"service", service:"zeta", title:"",
+    cards, merge,
+    userMode:"keep", charMode:"auto", headings:true,
+    zetterPlace:"situation", zetterRepeat:false,
+    world:{world:"",terms:"",userRole:"",relation:"",opening:""},
+    extra:"",
+    chars:[newChar()]
+  };
+}
+function newChar(){ return {name:"",profile:"",switches:[]}; }
+function newSwitch(){ return {normal:"",trigger:"",changed:"",ret:"",permanent:false}; }
+function normalize(s){
+  const d = defaultState();
+  if(!s || typeof s!=="object") return d;
+  const o = Object.assign({}, d, s);
+  o.cards = Object.assign({}, d.cards);
+  if(s.cards) for(const id in s.cards){ if(o.cards[id]) o.cards[id] = Object.assign({}, d.cards[id], s.cards[id]); }
+  o.merge = Object.assign({}, d.merge, s.merge||{});
+  o.world = Object.assign({}, d.world, s.world||{});
+  o.chars = Array.isArray(s.chars) && s.chars.length ? s.chars.map(c=>Object.assign(newChar(), c, {switches:(c.switches||[]).map(w=>Object.assign(newSwitch(), w))})) : d.chars;
+  if(!SERVICES[o.service]) o.service = "zeta";
+  for(const id in o.cards){ if(!STAGES.includes(o.cards[id].stage)) o.cards[id].stage="standard"; }
+  return o;
+}
+let state = (function(){ try{ const raw = localStorage.getItem(STORE_KEY); return normalize(raw?JSON.parse(raw):null); }catch(e){ return defaultState(); } })();
+let saveTimer = null;
+function save(){ clearTimeout(saveTimer); saveTimer = setTimeout(()=>{ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){} }, 250); }
+let editing = null;
+
+/* ---------- utils ---------- */
+const len = s => [...(s||"")].length;
+const esc = s => String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $ = (sel,root=document)=>root.querySelector(sel);
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove("show"),2200); }
+function svc(){ return SERVICES[state.service]; }
+function charName(i){ const n=(state.chars[i]?.name||"").trim(); return n || `キャラ${i+1}`; }
+
+/* {{user}} / {{char}} の表記 */
+function rep(t){
+  let s = t||"";
+  if(state.userMode==="plain") s = s.replace(/\{\{user\}\}/g,"ユーザー");
+  if(state.charMode==="generic") s = s.replace(/\{\{char\}\}/g,"キャラクター");
+  else if(state.charMode==="auto"){
+    const named = state.chars.filter(c=>c.name.trim());
+    const r = (state.chars.length===1 && named.length===1) ? named[0].name.trim() : "キャラクター";
+    s = s.replace(/\{\{char\}\}/g, r);
+  }
+  return s;
+}
+function prettyLabel(t){ return (t||"").replace(/\{\{char\}\}/g,"キャラ").replace(/\{\{user\}\}/g,"ユーザー"); }
+
+/* ---------- card resolution ---------- */
+function mergeActive(m){
+  return state.merge[m.id]!==false && m.members.every(id=>state.cards[id].on && !state.cards[id].override);
+}
+function activeItems(){
+  const merged = DATA.merges.filter(mergeActive);
+  const skip = new Set(merged.flatMap(m=>m.members));
+  const items = [];
+  DATA.cards.forEach(c=>{
+    const s = state.cards[c.id];
+    if(!s.on) return;
+    const m = merged.find(m=>m.members[0]===c.id);
+    if(m){
+      const st = STAGES[Math.max(...m.members.map(id=>STAGES.indexOf(state.cards[id].stage)))];
+      const hard = m.members.some(id=>CARD[id].criticality==="hard");
+      items.push({id:m.id, area:c.area, hard, text:m.variants[st], min:m.variants.min, label:m.label});
+      return;
+    }
+    if(skip.has(c.id)) return;
+    items.push({id:c.id, area:c.area, hard:c.criticality==="hard", text:s.override.trim()||c.variants[s.stage], min:s.override.trim()||c.variants.min, label:c.label});
+  });
+  return items;
+}
+
+/* ---------- builders ---------- */
+const cut = s => (s||"").trim().replace(/[。．.、，,]+$/,"");
+function switchText(w){
+  const n=cut(w.normal), t=cut(w.trigger), ch=cut(w.changed), r=cut(w.ret);
+  let out="";
+  if(n) out += `通常は${n}。`;
+  if(t && ch){
+    if(/(たら|ると|れば|なら)$/.test(t)) out += `${t}、${ch}。`;
+    else out += `${/(とき|時|際|中|間|後|場合|最中|以降)$/.test(t)?t:t+"とき"}は、${ch}。`;
+  } else if(ch) out += `${ch}。`;
+  if(w.permanent){ if(t||ch) out += "この変化は元に戻らない。"; }
+  else if(r){
+    let rr=r;
+    if(/(たら|ば|と|なら)$/.test(rr)) {}
+    else if(/た$/.test(rr)) rr+="ら";
+    else if(/(後|時|とき|以降)$/.test(rr)) rr+="は";
+    else if(/[うくぐすつぬぶむる]$/.test(rr)) rr+="と";
+    else rr+="になったら";
+    out += `${rr}、通常の状態に戻る。`;
+  }
+  return rep(out);
+}
+function rulesText(){
+  const items = activeItems();
+  const parts = [];
+  ["rp","narration","character"].forEach(a=>{
+    const lines = items.filter(i=>i.area===a).map(i=>rep(i.text));
+    if(!lines.length) return;
+    parts.push((state.headings?AREA_HEAD[a]+"\n":"") + lines.join("\n"));
+  });
+  const ex = state.extra.trim();
+  if(ex) parts.push((state.headings?"【追加指示】\n":"") + rep(ex));
+  return parts.join("\n\n");
+}
+function worldText(){
+  const w = state.world;
+  const sec = [["world","【世界観・舞台】"],["terms","【用語】"],["userRole","【{{user}}の立場】"],["relation","【関係】"],["opening","【開始状況】"]];
+  return sec.filter(([k])=>w[k].trim()).map(([k,h])=>rep((state.headings?h+"\n":"")+w[k].trim())).join("\n\n");
+}
+function charProfileText(c){
+  const parts = [];
+  if(c.profile.trim()) parts.push(rep(c.profile.trim()));
+  const sw = c.switches.map(switchText).filter(Boolean);
+  if(sw.length) parts.push((state.headings?"【切り替わり】\n":"") + sw.join("\n"));
+  return parts.join("\n\n");
+}
+function repeatText(){
+  const lines = activeItems().filter(i=>i.hard).map(i=>rep(i.min));
+  return lines.length ? (state.headings?"【再確認】\n":"") + lines.join("\n") : "";
+}
+function buildOutput(){
+  const S = svc(); const fields = [];
+  const rules = rulesText(), world = worldText();
+  if(state.service==="zeta"){
+    fields.push({label:"題名", text:state.title.trim(), max:S.titleMax, counted:true});
+    fields.push({label:"説明", text:world, counted:true, note:"世界観・関係・開始状況"});
+    fields.push({label:"ナレーター（非公開）", text:rules, counted:true, note:"RPルール・語り・人物共通ルール"});
+    state.chars.forEach((c,i)=>{
+      fields.push({label:`${charName(i)}｜名前`, text:c.name.trim(), max:S.nameMax, counted:true});
+      fields.push({label:`${charName(i)}｜プロフィール`, text:charProfileText(c), counted:true});
+    });
+  } else {
+    const place = state.zetterPlace;
+    const sit = [place!=="cast"?rules:"", world, state.zetterRepeat?repeatText():""].filter(Boolean).join("\n\n");
+    fields.push({label:"いまの状況", text:sit, counted:true, note:place!=="cast"?"ルール＋世界観・関係・開始状況":"世界観・関係・開始状況"});
+    state.chars.forEach((c,i)=>{
+      fields.push({label:`${charName(i)}｜名前`, text:c.name.trim(), max:S.nameMax, counted:S.countNames});
+      const prof = [charProfileText(c), place!=="situation"?rules:""].filter(Boolean).join("\n\n");
+      fields.push({label:`${charName(i)}｜性格・設定`, text:prof, counted:true});
+    });
+  }
+  fields.forEach(f=>f.count=len(f.text));
+  const total = fields.filter(f=>f.counted).reduce((a,f)=>a+f.count,0);
+  return {fields,total,limit:S.limit};
+}
+function totalChars(){ return buildOutput().total; }
+
+/* ---------- warnings ---------- */
+function warnings(){
+  const W = []; const S = svc(); const out = buildOutput();
+  if(out.total>out.limit) W.push({level:"error",msg:`<b>字数超過</b>：${out.total.toLocaleString()}／${out.limit.toLocaleString()}字。カードの「予算に収める」を試すか、自由記述を短くしてください。`});
+  if(state.service==="zeta"){
+    if(!state.title.trim()) W.push({level:"warn",msg:"題名が未入力です（Zetaでは必須）。"});
+    if(len(state.title)>S.titleMax) W.push({level:"error",msg:`題名が${S.titleMax}字を超えています。`});
+  }
+  state.chars.forEach((c,i)=>{
+    const nm = charName(i);
+    if(!c.name.trim()) W.push({level:"warn",msg:`${nm}：名前が未入力です（必須）。`});
+    if(len(c.name)>S.nameMax) W.push({level:"error",msg:`${nm}：名前が${S.nameMax}字を超えています。`});
+    if(state.service==="zetter" && !c.profile.trim()) W.push({level:"warn",msg:`${nm}：性格・設定が空です（Zetterでは必須）。`});
+    c.switches.forEach((w,j)=>{
+      const has = [w.trigger,w.changed].some(x=>x.trim());
+      if(!has && !w.ret.trim() && !w.normal.trim()) return;
+      if(!w.trigger.trim()||!w.changed.trim()) W.push({level:"warn",msg:`${nm}：切り替わり${j+1}の「きっかけ」か「変化後」が空です。`});
+      if(has && !w.ret.trim() && !w.permanent) W.push({level:"warn",msg:`${nm}：切り替わり${j+1}に「戻る条件」がありません。戻らない変化なら「元に戻らない」にチェックしてください。未入力のままだと、状態が戻らなくなるおそれがあります。`});
+    });
+  });
+  const on = id => state.cards[id] && state.cards[id].on;
+  DATA.pairs.forEach(p=>{ if(p.ids.every(on)) W.push({level:p.level,msg:`<b>${p.ids.join("＋")}</b>：${esc(prettyLabel(p.msg))}`}); });
+  DATA.merges.forEach(m=>{
+    if(m.members.every(on) && state.merge[m.id]===false) W.push({level:"info",msg:`<b>${m.members.join("＋")}</b>は内容が重なっています。統合文にすると字数を節約できます（カード画面で切替）。`});
+  });
+  if(!DATA.cards.filter(c=>c.criticality==="hard").some(c=>on(c.id))) W.push({level:"info",msg:"必須カード（ユーザーの代筆防止など）が全てオフです。"});
+  if(state.chars.length>1 && state.charMode==="keep") W.push({level:"info",msg:"キャラが複数いるとき、{{char}}が誰を指すかはサービス次第で曖昧です。表記を「キャラクター」にするのが無難です。"});
+  if(on("NA12") && state.chars.length>1) W.push({level:"warn",msg:"NA12（一人称の語り）：キャラが複数いると、誰の一人称かが曖昧になります。"});
+  if(state.service==="zetter" && state.zetterPlace!=="situation" && state.chars.length>1) W.push({level:"info",msg:`ルールを各キャストに置く設定のため、同じルールが${state.chars.length}人分重複して字数を使います。`});
+  return W;
+}
+
+/* ---------- render: service ---------- */
+function renderService(){
+  const S = svc();
+  $("#tab-service").innerHTML = `
+  <h2>出力先 <small>どのサービスに貼るか</small></h2>
+  <div class="svc">
+    ${Object.entries(SERVICES).map(([k,v])=>`<button data-act="service" data-v="${k}" aria-pressed="${state.service===k}"><b>${v.name}</b><span>${v.desc}</span></button>`).join("")}
+  </div>
+  <div class="msg info">紹介ページの内容はAIに渡りません。設定は必ず「出力」タブの欄に貼ってください。</div>
+
+  <h2>表記と配置</h2>
+  <div class="panel">
+    <label class="f">ユーザーの表記<span class="hint">Zetterは{{user}}が呼び名に置き換わります。Zetaで置換されるかは未確認です。</span></label>
+    <select data-bind="userMode">
+      <option value="keep" ${state.userMode==="keep"?"selected":""}>{{user}} のまま</option>
+      <option value="plain" ${state.userMode==="plain"?"selected":""}>「ユーザー」と書く</option>
+    </select>
+    <label class="f">キャラの表記<span class="hint">{{char}}の置換はどちらのサービスでも未確認です。おまかせ＝キャラ1人なら名前、複数なら「キャラクター」。</span></label>
+    <select data-bind="charMode">
+      <option value="auto" ${state.charMode==="auto"?"selected":""}>おまかせ</option>
+      <option value="generic" ${state.charMode==="generic"?"selected":""}>「キャラクター」と書く</option>
+      <option value="keep" ${state.charMode==="keep"?"selected":""}>{{char}} のまま</option>
+    </select>
+    <label class="toggle"><span>見出し【】をつける<small>読みやすくなる代わりに、見出し1つにつき数字を使います。</small></span><input type="checkbox" class="sw" data-bind="headings" ${state.headings?"checked":""}></label>
+    <div class="${state.service==="zetter"?"":"hide"}">
+      <label class="f">ルールの置き場所（Zetter）<span class="hint">どこに置くとよく効くかは未検証です。検証結果に合わせて切り替えてください。</span></label>
+      <select data-bind="zetterPlace">
+        <option value="situation" ${state.zetterPlace==="situation"?"selected":""}>「いまの状況」の先頭</option>
+        <option value="cast" ${state.zetterPlace==="cast"?"selected":""}>各キャストの「性格・設定」</option>
+        <option value="both" ${state.zetterPlace==="both"?"selected":""}>両方</option>
+      </select>
+      <label class="toggle"><span>必須ルールを末尾で再確認<small>「いまの状況」の最後に、必須カードの最小版をもう一度置きます。長いプロットで埋もれるのを防ぐ狙いです。</small></span><input type="checkbox" class="sw" data-bind="zetterRepeat" ${state.zetterRepeat?"checked":""}></label>
+    </div>
+  </div>
+
+  <h2>保存と読み込み</h2>
+  <div class="panel">
+    <p class="note mt0">入力内容はこの端末のブラウザに自動保存されます。別の端末へ移すときや、控えを残すときはJSONを使ってください。</p>
+    <div class="row">
+      <button class="btn primary" data-act="export">JSONを保存</button>
+      <button class="btn" data-act="copyjson">JSONをコピー</button>
+      <button class="btn" data-act="import">JSONを読み込む</button>
+    </div>
+    <label class="f">JSONを貼り付けて読み込む</label>
+    <textarea id="pasteJson" placeholder="ここにJSONを貼り付け" style="min-height:64px"></textarea>
+    <div class="row" style="margin-top:8px"><button class="btn sm" data-act="pasteimport">貼り付けた内容を読み込む</button></div>
+    <div class="row" style="margin-top:14px"><button class="btn danger sm" data-act="reset">すべて初期状態に戻す</button></div>
+  </div>
+  <p class="note">カードデータ v${esc(DATA.schema_version)}｜指示文がAIにどこまで守られるかは未検証です。実機で確かめながら使ってください。</p>`;
+}
+
+/* ---------- render: cards ---------- */
+function renderCards(){
+  const merged = DATA.merges.filter(m=>m.members.every(id=>state.cards[id].on));
+  const items = activeItems();
+  const used = items.reduce((a,i)=>a+len(rep(i.text)),0);
+  let html = `
+  <h2>困りごとカード <small>${items.length}項目・${used.toLocaleString()}字</small></h2>
+  <p class="lead">AIに起きてほしくないことを選びます。オンにしたカードは、段階（最小〜詳細）を選んで出力されます。</p>
+  <div class="sticky">
+    <div class="row">
+      <span class="note" style="margin:0">一括：</span>
+      <div class="seg">${STAGES.map(s=>`<button data-act="allstage" data-v="${s}">${STAGE_LABEL[s]}</button>`).join("")}</div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn sm" data-act="hardon">必須5枚をオン</button>
+      <button class="btn sm" data-act="alloff">全部オフ</button>
+      <button class="btn sm primary" data-act="fit">予算に収める</button>
+    </div>
+  </div>`;
+  merged.forEach(m=>{
+    const active = mergeActive(m);
+    html += `<div class="msg ${active?"ok":"info"}">
+      <b>${m.members.join("・")}</b>は内容が重なるため、${active?"<b>統合文</b>で出力しています。":"個別に出力しています。"}
+      <div class="row" style="margin-top:6px"><button class="btn sm" data-act="merge" data-id="${m.id}">${state.merge[m.id]===false?"統合する":"個別に戻す"}</button></div>
+      ${active?`<div class="ctext">${esc(rep(m.variants[STAGES[Math.max(...m.members.map(id=>STAGES.indexOf(state.cards[id].stage)))]]))}</div>`:""}
+    </div>`;
+  });
+  ["rp","narration","character"].forEach(a=>{
+    const cs = DATA.cards.filter(c=>c.area===a);
+    const n = cs.filter(c=>state.cards[c.id].on).length;
+    html += `<details class="area" open><summary>${AREA_LABEL[a]}<small>${n}／${cs.length}</small></summary>`;
+    cs.forEach(c=>{ html += cardHtml(c, merged); });
+    html += `</details>`;
+  });
+  $("#tab-cards").innerHTML = html;
+}
+function cardHtml(c, merged){
+  const s = state.cards[c.id];
+  const inMerge = merged.some(m=>mergeActive(m) && m.members.includes(c.id));
+  const text = s.override.trim() || c.variants[s.stage];
+  let h = `<div class="card ${s.on?"on":""} ${inMerge?"merged":""}" data-id="${c.id}">
+    <div class="chead" data-act="toggle" data-id="${c.id}">
+      <input type="checkbox" class="sw" ${s.on?"checked":""} tabindex="-1" aria-label="${esc(prettyLabel(c.label))}">
+      <div style="flex:1;min-width:0">
+        <div class="cid">${c.id}</div>
+        <div class="clabel">${esc(prettyLabel(c.label))}</div>
+        <div class="badges">
+          ${c.criticality==="hard"?`<span class="bdg hard">必須</span>`:""}
+          <span class="bdg">${KIND_LABEL[c.rule_kind]||c.rule_kind}</span>
+          ${s.override.trim()?`<span class="bdg edit">編集済み</span>`:""}
+          ${inMerge?`<span class="bdg">統合中</span>`:""}
+        </div>
+      </div>
+    </div>`;
+  if(s.on){
+    h += `<div class="cbody">
+      ${s.override.trim()?`<p class="note">編集した文が使われます（段階の切替は効きません）。</p>`:
+      `<div class="seg">${STAGES.map(st=>`<button data-act="stage" data-id="${c.id}" data-v="${st}" aria-pressed="${s.stage===st}">${STAGE_LABEL[st]}</button>`).join("")}</div>`}
+      <div class="ctext">${esc(rep(text))}</div>
+      <div class="cnt">${len(rep(text))}字</div>
+      ${editing===c.id?`
+        <textarea data-act="override" data-id="${c.id}" placeholder="自由に書き換えられます">${esc(s.override||c.variants[s.stage])}</textarea>
+        <div class="row" style="margin-top:6px"><button class="btn sm" data-act="editdone">閉じる</button><button class="btn sm danger" data-act="editreset" data-id="${c.id}">元の文に戻す</button></div>`
+      :`<div class="row"><button class="btn sm ghost" data-act="edit" data-id="${c.id}">文を編集</button></div>`}
+      ${c.notes?`<p class="note">${esc(prettyLabel(c.notes))}</p>`:""}
+    </div>`;
+  }
+  return h + `</div>`;
+}
+
+/* ---------- render: world ---------- */
+function renderWorld(){
+  const S = svc(); const z = state.service==="zeta";
+  const fld = (k,label,hint,ph)=>`<label class="f">${label}<span class="hint">${hint}</span></label>
+    <textarea data-bind="world.${k}" placeholder="${esc(ph)}">${esc(state.world[k])}</textarea><div class="cnt" data-cnt="world.${k}">${len(state.world[k])}字</div>`;
+  $("#tab-world").innerHTML = `
+  <h2>世界と始まり <small>${z?"→「説明」欄":"→「いまの状況」欄"}</small></h2>
+  <p class="lead">空欄の項目は出力されません。創作アイデアガチャなど、他のツールで作った設定を貼り付けても大丈夫です。</p>
+  ${z?`<div class="panel"><label class="f mt0">題名<span class="hint">Zetaでは必須。最大${S.titleMax}字で、全体の字数に含まれます。</span></label>
+    <input type="text" data-bind="title" value="${esc(state.title)}" placeholder="例：この夏、私たち幼馴染じゃいられない"><div class="cnt" data-cnt="title" data-max="${S.titleMax}">${len(state.title)}／${S.titleMax}字</div></div>`:""}
+  <div class="panel">
+    ${fld("world","世界観・舞台","時代、場所、社会の仕組み、世界の法則など","例：魔法が衰えた港町。夜は灯台守が街を巡回する。")}
+    ${fld("terms","用語の定義","この世界だけの言葉。「用語：意味」と1行ずつ書くとAIが読み取りやすくなります。","例：灯守（ともりもり）：夜の街を守る役職。")}
+    ${fld("userRole","ユーザーの立場","{{user}}が何者で、どんな立場にいるか","例：{{user}}は街に流れ着いたばかりの旅人。")}
+    ${fld("relation","キャラとの関係","{{user}}とキャラの関係、互いの印象","例：初対面。キャラは{{user}}を警戒している。")}
+    ${fld("opening","開始状況","会話が始まる時点の場面","例：嵐の夜、灯台の扉を{{user}}が叩く。")}
+  </div>
+  <h2>追加の指示 <small>${z?"→「ナレーター」欄":"→ ルールと同じ場所"}</small></h2>
+  <div class="panel">
+    <label class="f mt0">カードにない指示を自由に<span class="hint">カードの指示の後ろに続けて出力されます。</span></label>
+    <textarea data-bind="extra" placeholder="例：方言は関西弁にする。">${esc(state.extra)}</textarea><div class="cnt" data-cnt="extra">${len(state.extra)}字</div>
+  </div>`;
+}
+
+/* ---------- render: chars ---------- */
+function renderChars(){
+  const S = svc(); const z = state.service==="zeta";
+  let html = `<h2>キャラクター <small>${z?"→ 各キャラの「プロフィール」":"→ 各キャストの「性格・設定」"}</small></h2>
+  <p class="lead">性格は形容詞より「行動の癖」で書くと伝わりやすくなります。人物そのものを作るときは、創作OCメーカーなどの出力を貼り付けてください。</p>`;
+  state.chars.forEach((c,i)=>{
+    html += `<div class="panel char">
+      <div class="row" style="justify-content:space-between"><b data-charhead="${i}">${esc(charName(i))}</b>
+        ${state.chars.length>1?`<button class="btn sm danger" data-act="delchar" data-i="${i}">削除</button>`:""}</div>
+      <label class="f">名前<span class="hint">必須・最大${S.nameMax}字${S.countNames?"（全体の字数に含まれます）":""}</span></label>
+      <input type="text" data-bind="chars.${i}.name" value="${esc(c.name)}" placeholder="例：レオン">
+      <div class="cnt" data-cnt="chars.${i}.name" data-max="${S.nameMax}">${len(c.name)}／${S.nameMax}字</div>
+      <label class="f">${z?"プロフィール":"性格・設定"}<span class="hint">性格・話し方・背景など。例：「優しい」より「お礼が言えず『……置いといて』と言いながら必ず飲む」。</span></label>
+      <textarea data-bind="chars.${i}.profile" placeholder="性格・話し方・背景など" style="min-height:120px">${esc(c.profile)}</textarea>
+      <div class="cnt" data-cnt="chars.${i}.profile">${len(c.profile)}字</div>
+      <h3>切り替わり <span class="note">普段と違う状態になる条件</span></h3>`;
+    c.switches.forEach((w,j)=>{
+      const p = `chars.${i}.switches.${j}`;
+      html += `<div class="swbox">
+        <div class="row" style="justify-content:space-between"><b style="font-size:13px">切り替わり${j+1}</b><button class="btn sm ghost" data-act="delsw" data-i="${i}" data-j="${j}">削除</button></div>
+        <label class="f">通常の様子<span class="hint">例：温厚で争いを好まない</span></label>
+        <input type="text" data-bind="${p}.normal" value="${esc(w.normal)}">
+        <label class="f">きっかけ<span class="hint">例：剣を抜いて戦うとき</span></label>
+        <input type="text" data-bind="${p}.trigger" value="${esc(w.trigger)}">
+        <label class="f">変化後の様子<span class="hint">例：冷徹で容赦のない判断を下す</span></label>
+        <input type="text" data-bind="${p}.changed" value="${esc(w.changed)}">
+        <label class="f">戻る条件<span class="hint">例：戦闘が終わったら</span></label>
+        <input type="text" data-bind="${p}.ret" value="${esc(w.ret)}" ${w.permanent?"disabled":""}>
+        <label class="chk"><input type="checkbox" data-bind="${p}.permanent" ${w.permanent?"checked":""}>元に戻らない変化にする</label>
+        <div class="swprev" data-swprev="${i}.${j}">${esc(switchText(w))}</div>
+      </div>`;
+    });
+    html += `<button class="btn sm" data-act="addsw" data-i="${i}">＋ 切り替わりを追加</button></div>`;
+  });
+  html += `<div class="row"><button class="btn primary" data-act="addchar">＋ キャラを追加</button></div>`;
+  $("#tab-chars").innerHTML = html;
+}
+
+/* ---------- render: output ---------- */
+function renderOut(){
+  const o = buildOutput(); const S = svc(); const W = warnings();
+  const pct = Math.min(100, o.total/o.limit*100);
+  const cls = o.total>o.limit?"over":(o.total>o.limit*0.9?"near":"");
+  const order = {error:0,warn:1,info:2};
+  W.sort((a,b)=>order[a.level]-order[b.level]);
+  let html = `
+  <h2>出力 <small>${S.name}の欄ごとに分けています</small></h2>
+  <div class="panel">
+    <div class="row" style="justify-content:space-between;align-items:baseline">
+      <span class="big">${o.total.toLocaleString()}<span style="font-size:14px;color:var(--muted)"> ／ ${o.limit.toLocaleString()}字</span></span>
+      <span class="note" style="${o.total>o.limit?"color:var(--hard);font-weight:700":""}">${o.total>o.limit?`超過 ${(o.total-o.limit).toLocaleString()}字`:`残り ${(o.limit-o.total).toLocaleString()}字`}</span>
+    </div>
+    <div class="bar"><i class="${cls}" style="width:${pct}%"></i></div>
+    <div class="breakdown">${o.fields.filter(f=>f.counted&&f.count).map(f=>`${esc(f.label)} ${f.count}`).join("・")||"まだ何も入力されていません"}</div>
+    <p class="note">サービス側の数え方（改行や記号の扱い）と差が出ることがあります。上限ぎりぎりは避けてください。</p>
+  </div>`;
+  if(W.length) html += `<h3>確認事項（${W.length}）</h3>` + W.map(w=>`<div class="msg ${w.level}">${w.msg}</div>`).join("");
+  else html += `<div class="msg ok">確認事項はありません。</div>`;
+  html += `<div class="msg info">ここにある欄だけがAIに届きます。紹介ページはAIに渡らないので、設定は書かないでください。</div>`;
+  o.fields.forEach((f,k)=>{
+    const over = f.max && f.count>f.max;
+    html += `<div class="field">
+      <div class="fhead"><div><b>${esc(f.label)}</b>${f.counted?`<span class="tag">字数に含む</span>`:`<span class="tag nocount">字数外</span>`}</div>
+        <button class="btn sm primary" data-act="copy" data-k="${k}" ${f.text?"":"disabled"}>コピー</button></div>
+      <div class="fbody">${esc(f.text)}</div>
+      <div class="ffoot"><span>${f.note?esc(f.note):""}</span><span class="${over?"cnt over":""}">${f.count}字${f.max?`／${f.max}`:""}</span></div>
+    </div>`;
+  });
+  $("#tab-out").innerHTML = html;
+}
+
+/* ---------- meter ---------- */
+function renderMeter(){
+  const o = buildOutput(); const W = warnings();
+  const err = W.filter(w=>w.level==="error").length, wn = W.filter(w=>w.level==="warn").length;
+  const pct = Math.min(100, o.total/o.limit*100);
+  const cls = o.total>o.limit?"over":(o.total>o.limit*0.9?"near":"");
+  $("#meter").innerHTML = `<span class="mtxt"><b>${svc().name}</b> ${o.total.toLocaleString()}／${o.limit.toLocaleString()}字</span>
+    <div class="bar"><i class="${cls}" style="width:${pct}%"></i></div>
+    ${err?`<span class="wc msg error" style="margin:0">要修正${err}</span>`:wn?`<span class="wc msg warn" style="margin:0">確認${wn}</span>`:`<span class="wc msg ok" style="margin:0">OK</span>`}`;
+}
+
+/* ---------- render dispatch ---------- */
+const RENDER = {service:renderService, cards:renderCards, world:renderWorld, chars:renderChars, out:renderOut};
+function render(){
+  document.querySelectorAll("section.tab").forEach(s=>s.classList.toggle("active", s.id==="tab-"+state.tab));
+  document.querySelectorAll("nav#tabs button").forEach(b=>b.setAttribute("aria-selected", b.dataset.tab===state.tab));
+  RENDER[state.tab]();
+  renderMeter();
+}
+function go(tab){ state.tab = tab; editing=null; save(); render(); window.scrollTo(0,0); }
+
+/* ---------- path binding ---------- */
+function getPath(path){ return path.split(".").reduce((o,k)=>o?.[k], state); }
+function setPath(path, v){
+  const ks = path.split("."); let o = state;
+  for(let i=0;i<ks.length-1;i++) o = o[ks[i]];
+  o[ks[ks.length-1]] = v;
+}
+
+/* ---------- events ---------- */
+document.addEventListener("input", e=>{
+  const t = e.target;
+  if(t.dataset.bind){
+    const v = t.type==="checkbox" ? t.checked : t.value;
+    setPath(t.dataset.bind, v); save();
+    const c = document.querySelector(`[data-cnt="${t.dataset.bind}"]`);
+    if(c){ const m=c.dataset.max; c.textContent = m?`${len(v)}／${m}字`:`${len(v)}字`; c.classList.toggle("over", !!m && len(v)>+m); }
+    const mm = t.dataset.bind.match(/^chars\.(\d+)\.switches\.(\d+)\./);
+    if(mm){ const p=document.querySelector(`[data-swprev="${mm[1]}.${mm[2]}"]`); if(p) p.textContent = switchText(state.chars[mm[1]].switches[mm[2]]); }
+    if(/^chars\.\d+\.name$/.test(t.dataset.bind)){ const i=+t.dataset.bind.split(".")[1]; const h=document.querySelector(`[data-charhead="${i}"]`); if(h) h.textContent=charName(i); document.querySelectorAll("[data-swprev]").forEach(p=>{ const [a,b]=p.dataset.swprev.split("."); p.textContent=switchText(state.chars[a].switches[b]); }); }
+    if(t.type==="checkbox" || t.tagName==="SELECT") render(); else renderMeter();
+    return;
+  }
+  if(t.dataset.act==="override"){
+    const id = t.dataset.id; const c = CARD[id];
+    state.cards[id].override = (t.value.trim()===c.variants[state.cards[id].stage]) ? "" : t.value;
+    save();
+    const card = t.closest(".card"); const txt = state.cards[id].override.trim()||c.variants[state.cards[id].stage];
+    card.querySelector(".ctext").textContent = rep(txt);
+    card.querySelector(".cnt").textContent = len(rep(txt))+"字";
+    renderMeter();
+  }
+});
+document.addEventListener("click", async e=>{
+  const nav = e.target.closest("nav#tabs button"); if(nav){ go(nav.dataset.tab); return; }
+  if(e.target.closest("#meter")){ go("out"); return; }
+  const b = e.target.closest("[data-act]"); if(!b || b.tagName==="TEXTAREA") return;
+  const act = b.dataset.act, id = b.dataset.id;
+  switch(act){
+    case "service": state.service = b.dataset.v; break;
+    case "toggle": state.cards[id].on = !state.cards[id].on; if(!state.cards[id].on && editing===id) editing=null; break;
+    case "stage": state.cards[id].stage = b.dataset.v; break;
+    case "allstage": DATA.cards.forEach(c=>{ if(!state.cards[c.id].override) state.cards[c.id].stage=b.dataset.v; }); toast(`すべて「${STAGE_LABEL[b.dataset.v]}」にしました`); break;
+    case "hardon": DATA.cards.forEach(c=>{ if(c.criticality==="hard") state.cards[c.id].on=true; }); toast("必須カードをオンにしました"); break;
+    case "alloff": DATA.cards.forEach(c=>state.cards[c.id].on=false); editing=null; break;
+    case "fit": fitBudget(); return;
+    case "merge": state.merge[id] = state.merge[id]===false; break;
+    case "edit": editing = id; break;
+    case "editdone": editing = null; break;
+    case "editreset": state.cards[id].override=""; editing=null; break;
+    case "addchar": state.chars.push(newChar()); break;
+    case "delchar": if(confirm(`${charName(+b.dataset.i)}を削除しますか？`)) state.chars.splice(+b.dataset.i,1); else return; break;
+    case "addsw": state.chars[+b.dataset.i].switches.push(newSwitch()); break;
+    case "delsw": state.chars[+b.dataset.i].switches.splice(+b.dataset.j,1); break;
+    case "copy": { const f = buildOutput().fields[+b.dataset.k]; if(await copyText(f.text)) toast(`「${f.label}」をコピーしました`); return; }
+    case "export": exportJson(); return;
+    case "copyjson": if(await copyText(JSON.stringify(packState(),null,2))) toast("JSONをコピーしました"); return;
+    case "import": $("#fileIn").click(); return;
+    case "pasteimport": importText($("#pasteJson").value); return;
+    case "reset": if(confirm("入力内容をすべて消して初期状態に戻しますか？")){ const tab=state.tab; state=defaultState(); state.tab=tab; editing=null; toast("初期状態に戻しました"); } else return; break;
+    default: return;
+  }
+  save(); render();
+});
+$("#fileIn").addEventListener("change", e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader(); r.onload = ()=>importText(r.result); r.readAsText(f); e.target.value="";
+});
+
+/* ---------- fit to budget ---------- */
+function fitBudget(){
+  const lim = svc().limit;
+  if(totalChars()<=lim){ toast("すでに上限内です"); return; }
+  const groups = [
+    c=>c.area==="narration" && c.criticality!=="hard",
+    c=>c.area==="character" && c.criticality!=="hard",
+    c=>c.area==="rp" && c.criticality!=="hard",
+    c=>c.criticality==="hard"
+  ];
+  for(let target=2; target>=0; target--){
+    for(const g of groups){
+      let changed=false;
+      DATA.cards.forEach(c=>{ const s=state.cards[c.id]; if(s.on && !s.override.trim() && g(c) && STAGES.indexOf(s.stage)>target){ s.stage=STAGES[target]; changed=true; } });
+      if(changed && totalChars()<=lim){ save(); render(); toast("段階を下げて上限内に収めました（必須カードは最後まで残します）"); return; }
+    }
+  }
+  save(); render();
+  toast("すべて最小にしても超過します。カードを減らすか、自由記述を短くしてください。");
+}
+
+/* ---------- copy / io ---------- */
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); return true; }
+  catch(e){
+    const ta=document.createElement("textarea"); ta.value=t; ta.setAttribute("readonly",""); ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, t.length);
+    let ok=false; try{ ok=document.execCommand("copy"); }catch(_){}
+    ta.remove(); if(!ok) toast("コピーできませんでした。長押しで選択してください。"); return ok;
+  }
+}
+function packState(){
+  const s = JSON.parse(JSON.stringify(state)); delete s.tab;
+  return {schema:SCHEMA, schema_version:SCHEMA_VERSION, cards_version:DATA.schema_version, saved_at:new Date().toISOString(), state:s};
+}
+function exportJson(){
+  const blob = new Blob([JSON.stringify(packState(),null,2)], {type:"application/json"});
+  const a = document.createElement("a"); const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
+  const base = (state.title.trim()||charName(0)).replace(/[\\/:*?"<>|\s]/g,"_").slice(0,20);
+  a.href = URL.createObjectURL(blob); a.download = `plot_${base}_${stamp}.json`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+function importText(txt){
+  try{
+    const o = JSON.parse(txt);
+    if(!o || o.schema!==SCHEMA || !o.state) throw new Error("schema");
+    const tab = state.tab; state = normalize(o.state); state.tab = tab; editing=null; save(); render();
+    toast("読み込みました");
+  }catch(e){ toast("読み込めませんでした。このツールで保存したJSONか確認してください。"); }
+}
+
+render();
+</script>
+</body>
+</html>
