@@ -959,7 +959,7 @@ function totalChars(){ return buildOutput().total; }
 /* ---------- warnings ---------- */
 function warnings(){
   const W = []; const S = svc(); const out = buildOutput();
-  if(out.total>out.limit) W.push({level:"error",msg:`<b>字数超過</b>：${out.total.toLocaleString()}／${out.limit.toLocaleString()}字。カードの「予算に収める」を試すか、自由記述を短くしてください。`});
+  if(out.total>out.limit) W.push({level:"error",msg:`<b>字数超過</b>：${out.total.toLocaleString()}／${out.limit.toLocaleString()}字。カードの「字数内に収める」を試すか、自由記述を短くしてください。`});
   if(state.service==="zeta"){
     if(!state.title.trim()) W.push({level:"warn",msg:"題名が未入力です（Zetaでは必須）。"});
     if(len(state.title)>S.titleMax) W.push({level:"error",msg:`題名が${S.titleMax}字を超えています。`});
@@ -1055,7 +1055,7 @@ function renderCards(){
     <div class="row" style="margin-top:8px">
       <button class="btn sm" data-act="hardon">必須5枚をオン</button>
       <button class="btn sm" data-act="alloff">全部オフ</button>
-      <button class="btn sm primary" data-act="fit">予算に収める</button>
+      <button class="btn sm primary" data-act="fit">字数内に収める</button>
     </div>
   </div>`;
   merged.forEach(m=>{
