@@ -89,6 +89,11 @@ input[type=text]:focus,textarea:focus,select:focus{outline:2px solid var(--accen
 .bdg{font-size:10.5px;padding:1px 7px;border-radius:999px;background:var(--surface2);color:var(--muted)}
 .bdg.hard{background:var(--hard-soft);color:var(--hard);font-weight:700}
 .bdg.edit{background:var(--warn-soft);color:var(--warn)}
+.bdg.opt{background:var(--info-soft);color:var(--info)}
+.bdg.clar{background:var(--ok-soft);color:var(--ok)}
+h2.grp{margin-top:26px;padding-top:10px;border-top:1px solid var(--line)}
+details.infos{margin:8px 0}
+details.infos>summary{cursor:pointer;font-size:13px;color:var(--muted);padding:4px 0}
 .cbody{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
 .ctext{margin:8px 0 2px;font-size:13.5px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
 .note{font-size:12px;color:var(--muted);margin:4px 0}
@@ -143,7 +148,7 @@ nav#tabs button[aria-selected="true"]{color:var(--accent);font-weight:700}
 <body>
 <header>
   <h1>プロット設計工房</h1>
-  <p>困りごとを選ぶと、AIチャット用の指示文に変換して、サービスの入力欄ごとに分けて出力します。</p>
+  <p>困りごとを防ぐカードと表現を強くするカードを選ぶと、AIチャット用の指示文に変換して、サービスの入力欄ごとに分けて出力します。</p>
 </header>
 <main>
   <section class="tab" id="tab-service"></section>
@@ -166,7 +171,7 @@ nav#tabs button[aria-selected="true"]{color:var(--accent);font-weight:700}
 <script>
 "use strict";
 const DATA = {
-  "schema_version": "1.1.0",
+  "schema_version": "1.2.0",
   "project": "AIチャット用プロット設計工房",
   "description": "選択式の困りごとカード。プロット一本をサービスの入力欄ごとに配分する想定。AIでの有効性は未実証。",
   "stages": {
@@ -186,7 +191,9 @@ const DATA = {
     "条件・例外・終了条件は必要なものをセットで扱う",
     "禁止の有無や文型の優劣は実証なしに断定しない",
     "自由記述の世界観・開始状況や、別の切り替わりビルダーと重複させない",
-    "placement=globalのカードは全員共通のルール欄へ1回だけ出力する（キャラごとに重複させない）"
+    "placement=globalのカードは全員共通のルール欄へ1回だけ出力する（キャラごとに重複させない）",
+    "rule_kind=enhance／criticality=optional の表現強化カードは初期OFF。字数内に収めるでは最初に段階を下げ、次にOFFにする",
+    "clarified（行動を明確化した文）は試験機能。基本文と二重出力しない。境界の範囲は変えない"
   ],
   "cards": [
     {
@@ -202,7 +209,13 @@ const DATA = {
         "detail": "{{user}}の台詞、身体動作、選択、返答をAI側で新たに決定・確定しない。{{char}}および他の登場人物の反応、周囲の状況、行動の結果として観測できる変化を描写する。{{user}}の次の行動は本人の入力に委ねる。"
       },
       "notes": "最優先の境界候補。{{user}}本人が既に入力した行為を受けて結果を描くことは妨げない。",
-      "placement": "global"
+      "placement": "global",
+      "clarified": {
+        "min": "{{user}}の言動は本人の入力に委ねて確定せず、{{char}}と状況を描く。",
+        "short": "{{user}}の台詞・行動は本人の入力に委ねる。AIは{{char}}の反応と周囲の変化を描き、未入力の言動を確定しない。",
+        "standard": "各返信では{{char}}の言動、他の登場人物の反応、環境の変化を描く。{{user}}の台詞・行動・選択は本人が入力した範囲に基づいて扱い、未入力の言動をAI側で決定しない。",
+        "detail": "すべての返信で{{user}}の発言・動作・選択・返答を本人の入力に委ねる。AIが進めるのは{{char}}や周囲の人物の反応、環境、すでに入力された行為の結果とする。{{user}}の未入力の言動を新たに確定しない。会話の節目では{{user}}が次の行動を選べる余地を残す。"
+      }
     },
     {
       "id": "RP02",
@@ -217,7 +230,13 @@ const DATA = {
         "detail": "{{user}}の内心、動機、欲求、過去の記憶、身体感覚をAIが勝手に確定しない。{{char}}が相手の表情や言葉から推察する場合は「〜かもしれない」のように人物の認識として扱い、事実とは区別する。{{user}}自身が明示した心理は反映してよい。"
       },
       "notes": "",
-      "placement": "global"
+      "placement": "global",
+      "clarified": {
+        "min": "{{user}}の内心は本人の入力に委ね、{{char}}の推測は推測として描く。",
+        "short": "{{user}}の感情や記憶を扱う際は、{{char}}が受け取った印象と本人が明示した内容を区別する。内心をAIが断定しない。",
+        "standard": "{{user}}の感情や意図に触れる場面では、{{char}}が言動から受け取った印象や推測として描く。{{user}}本人の内心や記憶は入力に基づいて扱い、推測を確定した事実にしない。",
+        "detail": "{{user}}の感情・意図・記憶・身体感覚については本人が入力した情報を基準とする。{{char}}の理解が必要な場面では、表情や既出の発言から受けた印象として描き、人物の推測と客観的事実を区別する。本人の入力がない内心をAI側で新しい事実として確定しない。"
+      }
     },
     {
       "id": "RP03",
@@ -292,7 +311,13 @@ const DATA = {
         "detail": "{{user}}の拒否・撤回・中断の意思を、都合よく同意に読み替えない。拒否された接触や関係上の働きかけは中断し、その後の{{char}}の感情や対応を描く。意思表示が曖昧なら決めつけず確認可能な状況を作る。人物の葛藤や不満は描写してよいが、意思の尊重と混同しない。"
       },
       "notes": "デフォルトで推奨する境界。物語上の対立とユーザーの実際の操作権限を分ける。",
-      "placement": "global"
+      "placement": "global",
+      "clarified": {
+        "min": "{{user}}が拒否・中断を示したら行為を止め、{{char}}は対応を調整する。",
+        "short": "{{user}}が拒否や中断を示した場面では、その行為を止め、{{char}}は距離・話題・行動を調整する。",
+        "standard": "{{user}}が拒否・中断を明確に示した場合、該当する行為を継続せず、{{char}}は動作を止めて距離や話題を調整する。意思が曖昧なときは独断で進めず、人物の会話として確認する。",
+        "detail": "{{user}}が行為の拒否または中断を明示した場面では、その行為を続けない。{{char}}は動作を止め、相手の意思に沿って距離・会話・進行を調整する。意思表示が曖昧な場合は展開を先取りせず、必要に応じて登場人物として確認する。物語上の対立を描くことと、{{user}}の実際の操作権限を奪うことは区別する。"
+      }
     },
     {
       "id": "RP08",
@@ -502,7 +527,13 @@ const DATA = {
         "detail": "各返信では焦点となる行動・台詞・新情報を明確にし、不要な回想や背景解説を挿入しない。場面の緊張度に応じて短文と描写を調整し、返信一回で複数の重要な決断を済ませない。文字数の具体的目標はサービスの出力制限を踏まえ別途設定する。"
       },
       "notes": "",
-      "placement": "global"
+      "placement": "global",
+      "clarified": {
+        "min": "一返信は一つの働きかけを中心にまとめる。",
+        "short": "一返信では会話や行動の焦点を一つに置き、必要な描写を添える。",
+        "standard": "各返信は中心となる台詞・行動・新情報を一つのまとまりにし、場面を進めるのに必要な描写を添える。説明を増やすより応答可能な区切りを重視する。",
+        "detail": "各返信では中心となる働きかけと、その理解に必要な反応・環境の変化を一つのまとまりとして示す。背景情報の説明は焦点との関連性を基準に選び、重要な決定を一返信でいくつも確定しない。文字数の数値目標は別設定で扱い、簡潔さのために場面の理解を損なわない。"
+      }
     },
     {
       "id": "NA11",
@@ -577,7 +608,13 @@ const DATA = {
         "detail": "相手への評価は、約束が守られた経験、危機での対応、継続した対話、裏切りなどの出来事に応じて更新する。初期の警戒心や立場の違いは簡単に消えず、親密になっても元来の性格・判断基準を残す。大きな態度変化には転機を置く。"
       },
       "notes": "",
-      "placement": "global"
+      "placement": "global",
+      "clarified": {
+        "min": "親密さは出来事と信頼の積み重ねに応じて変化する。",
+        "short": "親密さが変わるときは、共有した経験と本人の判断に沿って段階的に描く。",
+        "standard": "{{char}}の警戒や好意が変化する場面では、直前までの出来事、相手への評価、性格に根拠を置く。親切や短い会話だけで強い信頼や恋愛感情を確定しない。",
+        "detail": "{{char}}の好意・警戒・信頼は過去の経験と現在の出来事を踏まえて更新する。感情が大きく動く際には、それを引き起こした言動や選択を物語内に示し、以前の葛藤も必要に応じて残す。一度の好意的な接触を全面的な信頼や恋愛感情の成立とみなさず、変化の速度は人物ごとに異ならせる。"
+      }
     },
     {
       "id": "CH04",
@@ -682,6 +719,312 @@ const DATA = {
         "detail": "{{char}}の判断は{{user}}からの評価だけで決めず、責任、信念、関係性、失うもの、本人の目標を考慮する。{{user}}の提案に賛成する場合にも理由を持たせ、対立する場合は人物らしい根拠を示す。親密な関係でも異議や独自の希望を表現できる。"
       },
       "notes": "",
+      "placement": "global",
+      "clarified": {
+        "min": "各人物は自分の価値観と利害に沿って判断する。",
+        "short": "登場人物はそれぞれの目的や判断基準を持ち、{{user}}への賛否を個別に決める。",
+        "standard": "登場人物は固有の価値観・目的・知識を基準に行動する。{{user}}の意見には人物ごとに賛成、保留、反論などの反応を取り、全員が同じ結論に従う描写に固定しない。",
+        "detail": "各登場人物に固有の動機、信念、利害、限られた情報を持たせ、{{user}}の言動への反応はそれぞれの立場から判断する。賛同には理由を、反対には本人の価値観や状況を反映する。対立だけを目的とするのではなく、人物らしい合意・譲歩・留保も描く。"
+      }
+    },
+    {
+      "id": "EN01",
+      "area": "narration",
+      "label": "言葉をもっと具体的にしたい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "名詞と動詞を具体的に選ぶ。",
+        "short": "漠然とした形容を減らし、伝える対象に合う名詞と動詞を選ぶ。",
+        "standard": "人物や物事の様子は、抽象的な評価語だけで済ませず、対象が見える名詞と動きが分かる動詞を使って表現する。",
+        "detail": "文章の中心となる名詞と動詞を具体的に選び、誰が何をしたか、何がどのように変化したかを読み取れるようにする。形容詞や評価語は意味を補うために用い、曖昧な修飾を重ねて情報の輪郭をぼかさない。"
+      },
+      "notes": "NA08の「感情を行動から示す」と近接。こちらは主に語彙の具体性を対象とする。 効果は未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN02",
+      "area": "narration",
+      "label": "描写に手触りや質感を出したい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "質感を伝える具体的な描写を選ぶ。",
+        "short": "材質や重さなど、対象を感じ取れる特徴を適度に描く。",
+        "standard": "物や環境には、その対象を特徴づける材質・重さ・表面の状態などを選んで添え、漠然とした説明だけで済ませない。",
+        "detail": "描写対象を特徴づける材質、重さ、硬さ、表面の状態などを具体的に表し、読者が対象を思い浮かべられる文章を目指す。特徴は文章の焦点に合うものを選び、あらゆる感覚を網羅したり、描写量そのものを目的にしたりしない。"
+      },
+      "notes": "NA06と重複しやすい。NA06は知覚・身体反応、EN02は物や環境の質感に重点。 効果は未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN03",
+      "area": "narration",
+      "label": "人物や物の位置関係を明確にしたい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "人物と物の位置関係を分かりやすく描く。",
+        "short": "誰がどこにいて何に向き合うか、位置関係を明確にする。",
+        "standard": "人物、家具、出入口などの位置関係を一貫させ、視線や移動の向きが自然に把握できる文章にする。",
+        "detail": "人物と物の配置を文章内で矛盾なく保ち、移動・視線・接触の方向が追えるように描く。位置情報は出来事を理解するのに必要な範囲で示し、地図のような説明を毎回挟まず、既に示した配置を活用する。"
+      },
+      "notes": "NA06の「距離や空間」と近接。こちらは位置関係の整合性を主眼とする。 効果は未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN04",
+      "area": "narration",
+      "label": "動きや持ち物のつながりを自然にしたい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "動作と物の状態を連続させる。",
+        "short": "直前の姿勢や持ち物を踏まえ、動作のつながりを保つ。",
+        "standard": "人物の姿勢、手に持つ物、開閉した物の状態を前の描写から引き継ぎ、動作が自然につながるようにする。",
+        "detail": "人物の姿勢や立ち位置、持ち物、扉や道具の状態を直前の描写に照らして扱う。変化が起きたら必要な動作を示し、手にない物を突然使わせるなどの飛躍を減らす。ただし当然の細かな動作を毎回逐一説明しない。"
+      },
+      "notes": "RP09の継続性と近接。こちらは文中の物理的な動作連続性に限定。 効果は未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN05",
+      "area": "narration",
+      "label": "文章のリズムを整えたい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "文の長短に自然な変化をつける。",
+        "short": "短文と長文を意味に応じて使い分け、単調な文調を避ける。",
+        "standard": "文の長さ、句読点、段落の切れ目を意味のまとまりに合わせて調整し、読みやすさと自然な緩急を両立する。",
+        "detail": "語りのリズムは内容の切れ目や情報の重みに合わせて整える。短文の連続や長い修飾の連鎖に偏らず、句読点・文末・段落の区切りを選ぶ。文字数を増やすこと自体を目的にせず、意味の伝達を優先して緩急をつける。"
+      },
+      "notes": "NA09のテンポ調整、NA10の長さ管理と引っ張り合う可能性。こちらは文単位のリズム。 効果は未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN06",
+      "area": "narration",
+      "label": "比喩を上品に使いたい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "比喩は意味を深めるときに使う。",
+        "short": "比喩は対象の印象を鮮明にするものに絞って使う。",
+        "standard": "比喩表現は、直接的な説明では伝わりにくい特徴を明確にできる場合に選び、意味の似た比喩を重ねない。",
+        "detail": "比喩は対象の質感や感情の輪郭を補い、読み手の理解を深めるものに限って使う。人物の視点や世界観に合う言葉を選び、華美な比喩の連続で動作・台詞・情報が埋もれないようにする。比喩を使わない文章も自然に混ぜる。"
+      },
+      "notes": "NA10の簡潔さと緊張関係になり得る。常に比喩を追加する指示にはしない。 効果は未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN07",
+      "area": "narration",
+      "label": "文章の語感を整えたい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "語感と読みやすさを整える。",
+        "short": "音の重なりや語尾の単調さを整え、自然に読める文章にする。",
+        "standard": "同じ語尾や似た音の連続を必要に応じて調整し、意味を保ちながら音読しても引っかかりにくい文にする。",
+        "detail": "語の響き、助詞の連続、文末の反復、句読点の位置に気を配り、滑らかに読める文章に整える。ただし語感を優先しすぎて人物の口調や文意を変えず、意図的な反復が効果を持つ場合はそのまま生かす。"
+      },
+      "notes": "NA07の反復防止と重複。こちらは音・助詞・語尾のつながりを重視。 効果は未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN08",
+      "area": "narration",
+      "label": "言葉にしない含みを残したい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "言外の意味を残す。",
+        "short": "意味を言い切りすぎず、言動から読み取れる余地を残す。",
+        "standard": "台詞や行動が示す含みを大切にし、意味をすべて説明しない。必要な事実は明確にして、解釈には余地を残す。",
+        "detail": "出来事の事実関係や人物の行動は理解できるようにしつつ、感情や関係性の意味を一つの解釈に固定しすぎない。台詞と動作が示す含みを生かし、説明で解釈を回収しない。ただし重要な状況説明まで曖昧にしない。"
+      },
+      "notes": "NA08にかなり近い。併用するならEN08は解釈の余地、NA08は感情説明の抑制と役割を分ける。 効果は未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN09",
+      "area": "narration",
+      "label": "台詞に奥行きを出したい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "台詞に意図や含みを持たせる。",
+        "short": "台詞は表面の意味だけでなく、人物の目的や関係もにじませる。",
+        "standard": "台詞の言葉選びに、人物の目的、ためらい、相手との距離感を反映させ、説明だけの会話に偏らせない。",
+        "detail": "台詞は単なる情報伝達ではなく、話者が何を望み、何を伝えず、相手にどう受け取ってほしいかを反映して構成する。表面上の言葉と意図が異なる表現も人物設定の範囲で用い、意図を地の文で逐一解説しない。"
+      },
+      "notes": "NA03・NA08と近接。台詞自体の言語選択に特化。 効果は未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN10",
+      "area": "narration",
+      "label": "会話の受け答えに手応えを出したい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "相手の発言を受けて台詞を返す。",
+        "short": "発言への反応を具体的にし、話題が一方的に流れない会話にする。",
+        "standard": "会話では直前の言葉や態度を受けて応答し、同じ話題の繰り返しではなく、新たな情報や態度の変化につなげる。",
+        "detail": "登場人物の返答は、直前の発言のどこを受け取ったかが分かるように構成する。受け止める、問い返す、かわす、異議を唱えるなどの反応を人物の目的に沿って選び、毎回同意や説明だけで会話を閉じない。{{user}}の返答は作らない。"
+      },
+      "notes": "NA03の会話中心方針と近接。{{user}}の代筆防止（RP01）を守る。 効果は未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN11",
+      "area": "narration",
+      "label": "動作にもキャラの個性をにじませたい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "所作に人物の個性を反映する。",
+        "short": "同じ行動でも、姿勢や動作の選び方に人物の癖を反映する。",
+        "standard": "人物の性格や習慣は、台詞だけでなく動作の速さ、姿勢、物の扱い方などにも一貫して表す。",
+        "detail": "人物の個性は口調の説明だけに任せず、姿勢、手順の選び方、物の扱い、反応までの間などに反映する。すべての動作を大げさな決め仕草にせず、人物設定との一貫性を優先する。{{user}}の未入力の動作は創作しない。"
+      },
+      "notes": "NA08の間接描写やCH01の口調一貫性と近接するが、所作の固有性に重点。 効果は未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN12",
+      "area": "narration",
+      "label": "世界観の情報を自然に織り込みたい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "設定情報を自然な描写になじませる。",
+        "short": "世界の制度や習慣は、説明の羅列より行動や環境に沿って伝える。",
+        "standard": "世界観の説明は、人物の行動や周囲の物事に結びつけて少しずつ示し、場面と無関係な設定の羅列を避ける。",
+        "detail": "世界観や社会制度の情報は、人物が触れる道具、言葉、習慣、選択に自然に現れるようにする。読者の理解に必要な用語は明確に定義しつつ、一度に大量の設定を説明しない。既存の世界観と矛盾する細部を新たに断定しない。"
+      },
+      "notes": "NA10の「長い背景説明を連ねない」と重複・緊張する。用語定義や世界観の自由記述を上書きしない。 効果は未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN13",
+      "area": "narration",
+      "label": "印象に残る細部を選びたい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "特徴を伝える細部を選ぶ。",
+        "short": "多くの細部を列挙せず、印象を決める特徴を優先して描く。",
+        "standard": "描写では特徴の羅列より、その人物や場所の印象を決める少数の細部を選び、読み手の注意を向ける。",
+        "detail": "人物や場所の描写は、情報量の多さではなく焦点の明確さを優先する。読者が覚えておく価値のある特徴を選んで示し、同じ印象を補強するだけの細部は重ねない。必要な位置関係や事実は省略しない。"
+      },
+      "notes": "NA06の感覚描写・NA10の分量管理と共存できるが、優先順位を競う場合がある。 効果は未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN14",
+      "area": "narration",
+      "label": "物語の雰囲気に統一感を持たせたい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "語りの雰囲気を一貫させる。",
+        "short": "語彙や文調を作品の雰囲気に合わせ、唐突な調子のずれを抑える。",
+        "standard": "地の文の語彙や文調は作品の雰囲気と整合させ、人物の台詞の個性は保ちながら、語りの調子を大きくぶらさない。",
+        "detail": "語りの文体や語彙の選択に、作品全体の明暗、重厚さ、軽快さなどの基調を反映する。人物ごとの台詞は個性を優先し、場面の変化に応じた自然な調子の違いまで均一化しない。世界観に合わない語彙は必要に応じて調整する。"
+      },
+      "notes": "NA09の場面のテンポ変化を妨げないよう、文体の基調と場面の緩急を区別。 効果は未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN15",
+      "area": "narration",
+      "label": "関係性を距離感で見せたい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "人物間の距離感を描写に表す。",
+        "short": "関係性を呼び方、視線、距離、態度の違いに反映する。",
+        "standard": "人物同士の親しさや緊張は、呼び方、視線の向け方、立ち位置、言葉の選択に反映して描く。",
+        "detail": "関係性は「親しい」「険悪」と説明するだけでなく、呼称、言葉の丁寧さ、間合い、相手への反応に一貫して反映する。出来事の蓄積に沿って変化を表し、好意や敵意を突然確定させない。{{user}}の内心は決めつけない。"
+      },
+      "notes": "NA06の距離、NA08の行動による表現、CH09の関係変化と近接。 効果は未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN16",
+      "area": "narration",
+      "label": "返信の終わりに余韻を残したい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "返信の終わりに余韻を残す。",
+        "short": "返信は結論を説明し尽くさず、自然な言動や状況で区切る。",
+        "standard": "返信の終わりでは意味をまとめ直しすぎず、次の応答につながる台詞、動作、場の変化などで自然に区切る。",
+        "detail": "一返信の締めくくりは、出来事の意味を解説する結論文に固定せず、人物の発言、未解決の動き、静かな状況の変化などから自然に選ぶ。選択を促す定型質問や毎回同じ引きを多用せず、{{user}}が続きを入力できる余地を保つ。"
+      },
+      "notes": "NA10の一返信の長さ、RP05の操作返却、NA11の質問回避に近い。 効果は未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN17",
+      "area": "narration",
+      "label": "台詞と地の文の重複を減らしたい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "台詞と地の文の役割を分ける。",
+        "short": "台詞で伝えた内容を地の文で繰り返さず、情報を補い合う。",
+        "standard": "台詞は人物の意図ややり取りを担い、地の文は動作や状況を補う。同じ感情や事実を両方で言い直さない。",
+        "detail": "台詞が既に伝えている情報を地の文で逐一説明し直さず、地の文には状況、人物の行動、読み手に必要な観察情報を持たせる。反対に、地の文だけで伝わる事実を不自然な説明台詞に変えない。両者が異なる情報を運ぶ構成を基本とする。"
+      },
+      "notes": "NA03の配分、NA08の心情説明抑制と近接。文字数節約にも寄与し得るが効果未検証。 効果は未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN18",
+      "area": "narration",
+      "label": "行動と結果の因果関係を分かりやすくしたい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "行動と結果のつながりを示す。",
+        "short": "結果が起きた理由を、直前の行動や状況から理解できるように描く。",
+        "standard": "人物の行動、周囲の条件、その結果のつながりを保ち、出来事が唐突な都合で発生したように見えない文章にする。",
+        "detail": "出来事には先行する行動や環境上の要因を反映し、結果が起きた理由を読み取れるようにする。因果関係を毎回解説するのではなく、必要な手掛かりを描写に置く。未入力の{{user}}の選択や行動の成功を、説明のために確定しない。"
+      },
+      "notes": "RP09の出来事の継続性と近接。こちらは文章上の因果の可読性に注目。 効果は未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN19",
+      "area": "narration",
+      "label": "親密な場面に艶と臨場感を添えたい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "親密さは{{char}}らしい仕草と空気感で描く。",
+        "short": "親密さが高まる場面では{{char}}の性格と関係性に沿って艶を添える。説明より仕草、反復より新しい変化を優先する。",
+        "standard": "親密さが高まる場面では{{char}}の性格と関係性を軸に、艶と臨場感のある地の文を構築する。温度・空気感、微細な動作、身体反応から効果的な一要素を選ぶ。説明より仕草、既出情報より変化を優先する。{{user}}の意思や反応は入力に基づいて扱う。",
+        "detail": "親密さが高まる場面では、{{char}}の性格と関係性を軸に、艶と臨場感のある地の文を構築する。現在の場面から「温度・空気感」「微細な動作」「身体の局所的変化」のうち、最も効果的な一要素を選んで描写を広げる。説明より仕草、既出情報より新しい変化を優先する。{{user}}の意思や反応は実際の入力に基づいて扱い、ためらいや拒否には{{char}}が応じて行動を調整する。"
+      },
+      "notes": "ユーザーが作成した艶描写方針。詳細版は原文を維持。全年齢〜非露骨な親密表現を想定。RP01／RP07の境界設定を置換しない。場面別の固有技法・行為の手順・キーワード発火指定は含めない。効果未実証。",
+      "placement": "global"
+    },
+    {
+      "id": "EN20",
+      "area": "narration",
+      "label": "描写を盛りすぎず、効果的な要素を選びたい",
+      "rule_kind": "enhance",
+      "criticality": "optional",
+      "variants": {
+        "min": "描写は効く一〜二点に絞り、不要なら足さない。",
+        "short": "描写は人物と世界観に合う一〜二点を選ぶ。同じ反応を重ねず、台詞で十分なら描写を足さない。",
+        "standard": "複数の描写方針があっても、すべてを使わず場面に効く一〜二点を選ぶ。直前と同じ仕草・比喩・反応の反復を避け、人物の性格・口調・世界観を優先する。台詞や沈黙で十分なら描写を足さない。",
+        "detail": "複数の表現強化カードが選ばれていても、すべての技法を一度に盛り込まず、その場面で意味を持つ一〜二点を選ぶ。直前の返信と同じ仕草・比喩・生理反応に偏らず、人物の性格・口調・世界観との整合性を最優先する。簡潔な台詞や無言だけで十分な場合は、演出を追加しない。描写量ではなく伝わる変化を基準に取捨選択する。"
+      },
+      "notes": "描写演出ロアブックv0.3末尾の常設プロット用【描写の配分】から抽出した共通方針。EN13は「細部の選択」、EN20は複数描写指示全体の取捨選択。ENを複数選択時に推奨できるが、デフォルトONや強制挿入はしない。",
       "placement": "global"
     }
   ],
@@ -779,17 +1122,330 @@ const DATA = {
       ],
       "level": "info",
       "msg": "どちらも「{{char}}の主体性」を扱っています。片方で足りるか確認してください。"
+    },
+    {
+      "ids": [
+        "EN01",
+        "NA08"
+      ],
+      "level": "info",
+      "msg": "具体語の選択と感情の間接描写は近接します。EN01は語彙の精度、NA08は感情説明の抑制に役割を分けてください。"
+    },
+    {
+      "ids": [
+        "EN02",
+        "NA06"
+      ],
+      "level": "info",
+      "msg": "質感と五感描写が一部重複します。EN02は物の特性、NA06は知覚や身体反応に重点を置いてください。"
+    },
+    {
+      "ids": [
+        "EN03",
+        "NA06"
+      ],
+      "level": "info",
+      "msg": "距離や空間配置の指定が重複します。EN03を選ぶ場合は位置関係の整合性を優先すると整理できます。"
+    },
+    {
+      "ids": [
+        "EN04",
+        "RP09"
+      ],
+      "level": "info",
+      "msg": "どちらも継続性を扱います。EN04は姿勢・持ち物など直近の物理的連続、RP09は出来事の継続を対象にします。"
+    },
+    {
+      "ids": [
+        "EN05",
+        "NA10"
+      ],
+      "level": "warn",
+      "msg": "文の緩急と返信の長さが引っ張り合う場合があります。EN05を文単位のリズムに限定し、返信全体の分量はNA10を基準にしてください。"
+    },
+    {
+      "ids": [
+        "EN05",
+        "NA09"
+      ],
+      "level": "info",
+      "msg": "テンポ表現が近接します。EN05は文単位のリズム、NA09は展開の速度を対象にします。"
+    },
+    {
+      "ids": [
+        "EN06",
+        "NA10"
+      ],
+      "level": "warn",
+      "msg": "比喩の追加が簡潔さを損なう場合があります。比喩は必要な場合に限り、返信の分量を優先してください。"
+    },
+    {
+      "ids": [
+        "EN07",
+        "NA07"
+      ],
+      "level": "info",
+      "msg": "反復表現の回避が重なります。EN07は音・語尾・助詞、NA07は同じ言い回しの反復を対象とします。"
+    },
+    {
+      "ids": [
+        "EN08",
+        "NA08"
+      ],
+      "level": "info",
+      "msg": "含みを残す指示と感情説明を抑える指示は近接します。過度に重ねず、EN08は解釈の余地に絞ってください。"
+    },
+    {
+      "ids": [
+        "EN09",
+        "NA03"
+      ],
+      "level": "info",
+      "msg": "台詞の表現を強化する指示と会話中心の構成は近接します。EN09は台詞の意図、NA03は台詞と地の文の配分を扱います。"
+    },
+    {
+      "ids": [
+        "EN09",
+        "NA08"
+      ],
+      "level": "info",
+      "msg": "台詞の含みと感情の間接描写が重複し得ます。両方選ぶときは同趣旨の文を短縮してください。"
+    },
+    {
+      "ids": [
+        "EN10",
+        "NA03"
+      ],
+      "level": "info",
+      "msg": "会話を進める指示が近接します。EN10は一つ前の発言への応答の質、NA03は構成の配分を扱います。"
+    },
+    {
+      "ids": [
+        "EN11",
+        "NA08"
+      ],
+      "level": "info",
+      "msg": "動作に個性を含ませる点が近接します。EN11は人物固有の所作、NA08は心情の示し方に分けられます。"
+    },
+    {
+      "ids": [
+        "EN12",
+        "NA10"
+      ],
+      "level": "warn",
+      "msg": "世界観の描写を増やすと返信が冗長になる場合があります。設定の説明量はNA10に従い、EN12は説明の混ぜ方に絞ってください。"
+    },
+    {
+      "ids": [
+        "EN13",
+        "NA06"
+      ],
+      "level": "info",
+      "msg": "細部の選択と感覚描写が重複します。EN13は情報の取捨選択、NA06は感覚情報の種類が中心です。"
+    },
+    {
+      "ids": [
+        "EN13",
+        "NA10"
+      ],
+      "level": "warn",
+      "msg": "特徴を増やすと分量が伸びる場合があります。EN13の主旨は描写追加ではなく重要な細部の選択です。"
+    },
+    {
+      "ids": [
+        "EN14",
+        "NA09"
+      ],
+      "level": "info",
+      "msg": "作品の雰囲気の一貫性と場面の緩急は両立可能です。作品全体の基調を固定し、局所的な変化は許容してください。"
+    },
+    {
+      "ids": [
+        "EN15",
+        "NA08"
+      ],
+      "level": "info",
+      "msg": "関係性を行動で示す指示が近接します。EN15は人間関係の具体的な距離感に重点を置きます。"
+    },
+    {
+      "ids": [
+        "EN15",
+        "NA06"
+      ],
+      "level": "info",
+      "msg": "距離の描写が重複します。EN15は関係性が表れる距離、NA06は環境や知覚に重点を置きます。"
+    },
+    {
+      "ids": [
+        "EN16",
+        "NA10"
+      ],
+      "level": "warn",
+      "msg": "余韻のための追記が返信を長くする場合があります。締めを延ばすのではなく結び方を工夫してください。"
+    },
+    {
+      "ids": [
+        "EN16",
+        "RP05"
+      ],
+      "level": "info",
+      "msg": "ユーザーに操作を返す指示と近接します。EN16は文章の締め方、RP05は会話運用上の順番を扱います。"
+    },
+    {
+      "ids": [
+        "EN16",
+        "NA11"
+      ],
+      "level": "info",
+      "msg": "定型質問で締めない点が重複します。選択肢や質問の羅列を避ける目的ならNA11だけでも足ります。"
+    },
+    {
+      "ids": [
+        "EN17",
+        "NA03"
+      ],
+      "level": "info",
+      "msg": "台詞と地の文の役割分担が近接します。EN17は同情報の二重説明を減らす方向で補完します。"
+    },
+    {
+      "ids": [
+        "EN17",
+        "NA08"
+      ],
+      "level": "info",
+      "msg": "心情を説明し直さない点が重なります。重複文を避ける目的なら片方だけでも足りる場合があります。"
+    },
+    {
+      "ids": [
+        "EN18",
+        "RP09"
+      ],
+      "level": "info",
+      "msg": "出来事の整合性が近接します。EN18は因果の見せ方、RP09は前提事実の維持を対象にします。"
+    },
+    {
+      "ids": [
+        "EN19",
+        "NA03"
+      ],
+      "level": "info",
+      "msg": "地の文の強化が台詞との配分に影響します。親密な場面でも会話の推進力を失わないよう、NA03の配分方針と照合してください。"
+    },
+    {
+      "ids": [
+        "EN19",
+        "NA06"
+      ],
+      "level": "info",
+      "msg": "空気感・微細な身体反応の指示が重複します。EN19は親密な関係の文脈、NA06は一般場面の感覚描写に役割分担してください。"
+    },
+    {
+      "ids": [
+        "EN19",
+        "NA08"
+      ],
+      "level": "info",
+      "msg": "「説明より仕草」と感情の間接描写が近接します。同趣旨の文を二重に出力する必要があるか確認してください。"
+    },
+    {
+      "ids": [
+        "EN19",
+        "NA10"
+      ],
+      "level": "warn",
+      "msg": "艶や臨場感を足す指示と返信を短く保つ指示が引っ張り合う可能性があります。描写の追加量より取捨選択を優先してください。"
+    },
+    {
+      "ids": [
+        "EN19",
+        "EN15"
+      ],
+      "level": "info",
+      "msg": "親密さを距離感で示す点が重複します。EN15は一般的な関係の距離、EN19は親密な場面の語りを扱います。"
+    },
+    {
+      "ids": [
+        "EN19",
+        "EN02"
+      ],
+      "level": "info",
+      "msg": "質感の描写が近接します。EN02は物や環境、EN19は親密な場面における人物・関係性を重視します。"
+    },
+    {
+      "ids": [
+        "EN19",
+        "EN20"
+      ],
+      "level": "info",
+      "msg": "いずれも描写の取捨選択を含みます。両方選ぶ場合、選択原則の重複を避けて圧縮できます。"
+    },
+    {
+      "ids": [
+        "EN20",
+        "NA03"
+      ],
+      "level": "info",
+      "msg": "不要な地の文を追加しない方針がNA03の会話・地の文の配分と近接します。目的が同じなら短く統合できます。"
+    },
+    {
+      "ids": [
+        "EN20",
+        "NA06"
+      ],
+      "level": "info",
+      "msg": "感覚描写を選ぶことと必要量へ絞ることは補完関係です。五感を毎回列挙しない方針を共有します。"
+    },
+    {
+      "ids": [
+        "EN20",
+        "NA08"
+      ],
+      "level": "info",
+      "msg": "説明より具体的な言動を重視する点が一部重なります。EN20は描写全般の選択量を対象とします。"
+    },
+    {
+      "ids": [
+        "EN20",
+        "NA10"
+      ],
+      "level": "info",
+      "msg": "返信量の抑制と描写の選択は補完関係です。文章量の上限はNA10、採用する表現要素はEN20で分けてください。"
+    },
+    {
+      "ids": [
+        "EN20",
+        "EN13"
+      ],
+      "level": "info",
+      "msg": "いずれも描写を少数に絞る指示を含みます。EN13は印象的な細部、EN20は全描写方針の選択・省略を対象とします。"
+    },
+    {
+      "ids": [
+        "EN20",
+        "EN06"
+      ],
+      "level": "info",
+      "msg": "比喩を必要な場合に限る点が近接します。併用する場合は比喩の選択条件を重複して書かないようにしてください。"
+    },
+    {
+      "ids": [
+        "EN20",
+        "EN16"
+      ],
+      "level": "info",
+      "msg": "余韻を出すための追記が不要な場合もあるという点で補完します。締めの自然さと省略可能性を両立してください。"
     }
   ]
 };
 const STAGES = ["min","short","standard","detail"];
 const STAGE_LABEL = {min:"最小",short:"短縮",standard:"標準",detail:"詳細"};
-const AREA_LABEL = {rp:"RP運用",narration:"語り（ナレーション）",character:"人物共通"};
-const AREA_HEAD = {rp:"【RPルール】",narration:"【語り】",character:"【人物共通】"};
-const KIND_LABEL = {boundary:"境界",behavior:"振る舞い",conditional:"条件"};
+const AREA_LABEL = {rp:"RP運用",narration:"語り（ナレーション）",character:"人物共通",enhance:"表現強化（任意）"};
+const AREA_HEAD = {rp:"【RPルール】",narration:"【語り】",character:"【人物共通】",enhance:"【表現の方針】"};
+const GROUPS = ["rp","narration","character","enhance"];
+const KIND_LABEL = {boundary:"境界",behavior:"振る舞い",conditional:"条件",enhance:"表現強化"};
 const STORE_KEY = "plotWorkshop.state.v1";
 const SCHEMA = "plot-workshop";
-const SCHEMA_VERSION = "1.1.0";
+const SCHEMA_VERSION = "1.2.0";
 const SERVICES = {
   zeta:{name:"Zeta",limit:2400,countNames:true,titleMax:20,nameMax:10,
     desc:"全体2400字（題名・名前を含む）。ナレーター欄にルールを置けます。"},
@@ -797,11 +1453,16 @@ const SERVICES = {
     desc:"全体20000字。ナレーター欄がないため、ルールの置き場所を選びます。"}
 };
 const CARD = Object.fromEntries(DATA.cards.map(c=>[c.id,c]));
+const groupOf = c => c.rule_kind==="enhance" ? "enhance" : c.area;
+const isEN = c => c.rule_kind==="enhance";
+function vset(c,s){ return (s.style==="clarified" && c.clarified) ? c.clarified : c.variants; }
+function textOf(c,s,stage){ return (s.override||"").trim() || vset(c,s)[stage||s.stage]; }
+let fitReport = null;
 
 /* ---------- state ---------- */
 function defaultState(){
   const cards = {};
-  DATA.cards.forEach(c=>{ cards[c.id] = {on:c.criticality==="hard", stage:"standard", override:""}; });
+  DATA.cards.forEach(c=>{ cards[c.id] = {on:c.criticality==="hard", stage:"standard", override:"", style:"base"}; });
   const merge = {}; DATA.merges.forEach(m=>merge[m.id]=true);
   return {
     tab:"service", service:"zeta", title:"",
@@ -825,7 +1486,7 @@ function normalize(s){
   o.world = Object.assign({}, d.world, s.world||{});
   o.chars = Array.isArray(s.chars) && s.chars.length ? s.chars.map(c=>Object.assign(newChar(), c, {switches:(c.switches||[]).map(w=>Object.assign(newSwitch(), w))})) : d.chars;
   if(!SERVICES[o.service]) o.service = "zeta";
-  for(const id in o.cards){ if(!STAGES.includes(o.cards[id].stage)) o.cards[id].stage="standard"; }
+  for(const id in o.cards){ const k=o.cards[id]; if(!STAGES.includes(k.stage)) k.stage="standard"; if(k.style!=="clarified" || !CARD[id].clarified) k.style="base"; if(typeof k.override!=="string") k.override=""; }
   return o;
 }
 let state = (function(){ try{ const raw = localStorage.getItem(STORE_KEY); return normalize(raw?JSON.parse(raw):null); }catch(e){ return defaultState(); } })();
@@ -857,7 +1518,7 @@ function prettyLabel(t){ return (t||"").replace(/\{\{char\}\}/g,"キャラ").rep
 
 /* ---------- card resolution ---------- */
 function mergeActive(m){
-  return state.merge[m.id]!==false && m.members.every(id=>state.cards[id].on && !state.cards[id].override);
+  return state.merge[m.id]!==false && m.members.every(id=>state.cards[id].on && !state.cards[id].override.trim() && state.cards[id].style!=="clarified");
 }
 function activeItems(){
   const merged = DATA.merges.filter(mergeActive);
@@ -870,11 +1531,11 @@ function activeItems(){
     if(m){
       const st = STAGES[Math.max(...m.members.map(id=>STAGES.indexOf(state.cards[id].stage)))];
       const hard = m.members.some(id=>CARD[id].criticality==="hard");
-      items.push({id:m.id, area:c.area, hard, text:m.variants[st], min:m.variants.min, label:m.label});
+      items.push({id:m.id, area:groupOf(c), hard, text:m.variants[st], min:m.variants.min, label:m.label});
       return;
     }
     if(skip.has(c.id)) return;
-    items.push({id:c.id, area:c.area, hard:c.criticality==="hard", text:s.override.trim()||c.variants[s.stage], min:s.override.trim()||c.variants.min, label:c.label});
+    items.push({id:c.id, area:groupOf(c), hard:c.criticality==="hard", text:textOf(c,s), min:textOf(c,s,"min"), label:c.label});
   });
   return items;
 }
@@ -904,7 +1565,7 @@ function switchText(w){
 function rulesText(){
   const items = activeItems();
   const parts = [];
-  ["rp","narration","character"].forEach(a=>{
+  GROUPS.forEach(a=>{
     const lines = items.filter(i=>i.area===a).map(i=>rep(i.text));
     if(!lines.length) return;
     parts.push((state.headings?AREA_HEAD[a]+"\n":"") + lines.join("\n"));
@@ -981,6 +1642,8 @@ function warnings(){
   DATA.merges.forEach(m=>{
     if(m.members.every(on) && state.merge[m.id]===false) W.push({level:"info",msg:`<b>${m.members.join("＋")}</b>は内容が重なっています。統合文にすると字数を節約できます（カード画面で切替）。`});
   });
+  const enOn = DATA.cards.filter(c=>isEN(c) && on(c.id) && c.id!=="EN20").length;
+  if(enOn>=3 && !on("EN20")) W.push({level:"info",msg:`表現強化カードを${enOn}枚選んでいます。描写が盛られすぎると感じたら、<b>EN20</b>（効果的な要素を選ぶ）を足すと抑えられるかもしれません。`});
   if(!DATA.cards.filter(c=>c.criticality==="hard").some(c=>on(c.id))) W.push({level:"info",msg:"必須カード（ユーザーの代筆防止など）が全てオフです。"});
   if(state.chars.length>1 && state.charMode==="keep") W.push({level:"info",msg:"キャラが複数いるとき、{{char}}が誰を指すかはサービス次第で曖昧です。表記を「キャラクター」にするのが無難です。"});
   if(on("NA12") && state.chars.length>1) W.push({level:"warn",msg:"NA12（一人称の語り）：キャラが複数いると、誰の一人称かが曖昧になります。"});
@@ -1045,8 +1708,8 @@ function renderCards(){
   const items = activeItems();
   const used = items.reduce((a,i)=>a+len(rep(i.text)),0);
   let html = `
-  <h2>困りごとカード <small>${items.length}項目・${used.toLocaleString()}字</small></h2>
-  <p class="lead">AIに起きてほしくないことを選びます。オンにしたカードは、段階（最小〜詳細）を選んで出力されます。</p>
+  <h2>指示カード <small>${items.length}項目・${used.toLocaleString()}字</small></h2>
+  <p class="lead">「困りごとを防ぐ」カードで困った挙動を抑え、「表現を強くする」カードで文章の質を底上げします。オンにしたカードは段階（最小〜詳細）を選んで出力されます。効果はどちらも未実証です。</p>
   <div class="sticky">
     <div class="row">
       <span class="note" style="margin:0">一括：</span>
@@ -1058,6 +1721,7 @@ function renderCards(){
       <button class="btn sm primary" data-act="fit">字数内に収める</button>
     </div>
   </div>`;
+  if(fitReport) html += `<div class="msg ${fitReport.ok?"ok":"warn"}"><b>字数内に収める：</b>${fitReport.html}</div>`;
   merged.forEach(m=>{
     const active = mergeActive(m);
     html += `<div class="msg ${active?"ok":"info"}">
@@ -1066,10 +1730,12 @@ function renderCards(){
       ${active?`<div class="ctext">${esc(rep(m.variants[STAGES[Math.max(...m.members.map(id=>STAGES.indexOf(state.cards[id].stage)))]]))}</div>`:""}
     </div>`;
   });
-  ["rp","narration","character"].forEach(a=>{
-    const cs = DATA.cards.filter(c=>c.area===a);
+  GROUPS.forEach(a=>{
+    if(a==="rp") html += `<h2 class="grp">困りごとを防ぐ</h2>`;
+    if(a==="enhance") html += `<h2 class="grp">表現を強くする <small>任意・初期はすべてオフ</small></h2><p class="lead">文章の方針を足すカードです。場面ごとの細かな技法はロアブックの役割なので、ここでは常に効かせたい方針だけを扱います。字数が足りないときは、このグループから先に短くなり、最後はオフになります。</p>`;
+    const cs = DATA.cards.filter(c=>groupOf(c)===a);
     const n = cs.filter(c=>state.cards[c.id].on).length;
-    html += `<details class="area" open><summary>${AREA_LABEL[a]}<small>${n}／${cs.length}</small></summary>`;
+    html += `<details class="area" ${a==="enhance"&&!n?"":"open"}><summary>${AREA_LABEL[a]}<small>${n}／${cs.length}</small></summary>`;
     cs.forEach(c=>{ html += cardHtml(c, merged); });
     html += `</details>`;
   });
@@ -1078,7 +1744,7 @@ function renderCards(){
 function cardHtml(c, merged){
   const s = state.cards[c.id];
   const inMerge = merged.some(m=>mergeActive(m) && m.members.includes(c.id));
-  const text = s.override.trim() || c.variants[s.stage];
+  const text = textOf(c,s);
   let h = `<div class="card ${s.on?"on":""} ${inMerge?"merged":""}" data-id="${c.id}">
     <div class="chead" data-act="toggle" data-id="${c.id}">
       <input type="checkbox" class="sw" ${s.on?"checked":""} tabindex="-1" aria-label="${esc(prettyLabel(c.label))}">
@@ -1087,7 +1753,9 @@ function cardHtml(c, merged){
         <div class="clabel">${esc(prettyLabel(c.label))}</div>
         <div class="badges">
           ${c.criticality==="hard"?`<span class="bdg hard">必須</span>`:""}
+          ${c.criticality==="optional"?`<span class="bdg opt">任意</span>`:""}
           <span class="bdg">${KIND_LABEL[c.rule_kind]||c.rule_kind}</span>
+          ${s.style==="clarified"?`<span class="bdg clar">明確化</span>`:""}
           ${s.override.trim()?`<span class="bdg edit">編集済み</span>`:""}
           ${inMerge?`<span class="bdg">統合中</span>`:""}
         </div>
@@ -1096,13 +1764,15 @@ function cardHtml(c, merged){
   if(s.on){
     h += `<div class="cbody">
       ${s.override.trim()?`<p class="note">編集した文が使われます（段階の切替は効きません）。</p>`:
-      `<div class="seg">${STAGES.map(st=>`<button data-act="stage" data-id="${c.id}" data-v="${st}" aria-pressed="${s.stage===st}">${STAGE_LABEL[st]}</button>`).join("")}</div>`}
+      `${c.clarified?`<div class="seg" style="margin-bottom:6px">${[["base","通常の指示"],["clarified","行動を明確化（試験）"]].map(([v,l])=>`<button data-act="style" data-id="${c.id}" data-v="${v}" aria-pressed="${s.style===v}">${l}</button>`).join("")}</div>`:""}
+      <div class="seg">${STAGES.map(st=>`<button data-act="stage" data-id="${c.id}" data-v="${st}" aria-pressed="${s.stage===st}">${STAGE_LABEL[st]}</button>`).join("")}</div>`}
       <div class="ctext">${esc(rep(text))}</div>
       <div class="cnt">${len(rep(text))}字</div>
       ${editing===c.id?`
-        <textarea data-act="override" data-id="${c.id}" placeholder="自由に書き換えられます">${esc(s.override||c.variants[s.stage])}</textarea>
+        <textarea data-act="override" data-id="${c.id}" placeholder="自由に書き換えられます">${esc(s.override||vset(c,s)[s.stage])}</textarea>
         <div class="row" style="margin-top:6px"><button class="btn sm" data-act="editdone">閉じる</button><button class="btn sm danger" data-act="editreset" data-id="${c.id}">元の文に戻す</button></div>`
       :`<div class="row"><button class="btn sm ghost" data-act="edit" data-id="${c.id}">文を編集</button></div>`}
+      ${s.style==="clarified"?`<p class="note">「行動を明確化」は、禁止の範囲を保ったまま、代わりに何を描くかを具体的にした試験版の文です。通常の指示より少し長くなります。</p>`:""}
       ${c.notes?`<p class="note">${esc(prettyLabel(c.notes))}</p>`:""}
     </div>`;
   }
@@ -1189,8 +1859,10 @@ function renderOut(){
     <div class="breakdown">${o.fields.filter(f=>f.counted&&f.count).map(f=>`${esc(f.label)} ${f.count}`).join("・")||"まだ何も入力されていません"}</div>
     <p class="note">サービス側の数え方（改行や記号の扱い）と差が出ることがあります。上限ぎりぎりは避けてください。</p>
   </div>`;
-  if(W.length) html += `<h3>確認事項（${W.length}）</h3>` + W.map(w=>`<div class="msg ${w.level}">${w.msg}</div>`).join("");
-  else html += `<div class="msg ok">確認事項はありません。</div>`;
+  const main = W.filter(w=>w.level!=="info"), info = W.filter(w=>w.level==="info");
+  if(main.length) html += `<h3>確認事項（${main.length}）</h3>` + main.map(w=>`<div class="msg ${w.level}">${w.msg}</div>`).join("");
+  else html += `<div class="msg ok">修正が必要な点はありません。</div>`;
+  if(info.length) html += `<details class="infos"><summary>重なり・参考情報（${info.length}）</summary>${info.map(w=>`<div class="msg info">${w.msg}</div>`).join("")}</details>`;
   html += `<div class="msg info">ここにある欄だけがAIに届きます。紹介ページはAIに渡らないので、設定は書かないでください。</div>`;
   o.fields.forEach((f,k)=>{
     const over = f.max && f.count>f.max;
@@ -1249,9 +1921,10 @@ document.addEventListener("input", e=>{
   }
   if(t.dataset.act==="override"){
     const id = t.dataset.id; const c = CARD[id];
-    state.cards[id].override = (t.value.trim()===c.variants[state.cards[id].stage]) ? "" : t.value;
+    const sc = state.cards[id];
+    sc.override = (t.value.trim()===vset(c,sc)[sc.stage]) ? "" : t.value;
     save();
-    const card = t.closest(".card"); const txt = state.cards[id].override.trim()||c.variants[state.cards[id].stage];
+    const card = t.closest(".card"); const txt = textOf(c,sc);
     card.querySelector(".ctext").textContent = rep(txt);
     card.querySelector(".cnt").textContent = len(rep(txt))+"字";
     renderMeter();
@@ -1266,9 +1939,10 @@ document.addEventListener("click", async e=>{
     case "service": state.service = b.dataset.v; break;
     case "toggle": state.cards[id].on = !state.cards[id].on; if(!state.cards[id].on && editing===id) editing=null; break;
     case "stage": state.cards[id].stage = b.dataset.v; break;
+    case "style": state.cards[id].style = b.dataset.v; break;
     case "allstage": DATA.cards.forEach(c=>{ if(!state.cards[c.id].override) state.cards[c.id].stage=b.dataset.v; }); toast(`すべて「${STAGE_LABEL[b.dataset.v]}」にしました`); break;
     case "hardon": DATA.cards.forEach(c=>{ if(c.criticality==="hard") state.cards[c.id].on=true; }); toast("必須カードをオンにしました"); break;
-    case "alloff": DATA.cards.forEach(c=>state.cards[c.id].on=false); editing=null; break;
+    case "alloff": DATA.cards.forEach(c=>state.cards[c.id].on=false); editing=null; fitReport=null; break;
     case "fit": fitBudget(); return;
     case "merge": state.merge[id] = state.merge[id]===false; break;
     case "edit": editing = id; break;
@@ -1296,22 +1970,45 @@ $("#fileIn").addEventListener("change", e=>{
 /* ---------- fit to budget ---------- */
 function fitBudget(){
   const lim = svc().limit;
-  if(totalChars()<=lim){ toast("すでに上限内です"); return; }
+  if(totalChars()<=lim){ fitReport=null; toast("すでに上限内です"); render(); return; }
+  const lowered = new Set(), turnedOff = [], skipped = new Set();
+  const label = id => `${id}`;
+  const done = ok => {
+    const parts = [];
+    if(turnedOff.length) parts.push(`表現強化を<b>${turnedOff.length}枚オフ</b>（${turnedOff.join("・")}）`);
+    if(lowered.size) parts.push(`<b>${lowered.size}枚</b>の段階を下げました（${[...lowered].join("・")}）`);
+    if(skipped.size) parts.push(`手で編集したカード（${[...skipped].join("・")}）は変更していません`);
+    if(!ok) parts.push("これ以上は自動で縮められません。カードを減らすか、世界観やキャラの自由記述を短くしてください");
+    fitReport = {ok, html:parts.join("。")+"。"};
+    save(); render(); window.scrollTo(0,0);
+    toast(ok ? `上限内に収めました（${totalChars().toLocaleString()}字）` : "自動では上限内に収まりませんでした");
+  };
+  const lower = (pred, target) => {
+    let changed=false;
+    DATA.cards.forEach(c=>{
+      const s=state.cards[c.id];
+      if(!s.on || !pred(c)) return;
+      if(s.override.trim()){ skipped.add(c.id); return; }
+      if(STAGES.indexOf(s.stage)>target){ s.stage=STAGES[target]; lowered.add(label(c.id)); changed=true; }
+    });
+    return changed;
+  };
+  // 1) 表現強化（任意）の段階を最小まで下げる
+  for(let t=2;t>=0;t--){ if(lower(isEN,t) && totalChars()<=lim) return done(true); }
+  // 2) 表現強化を長い順にオフ
+  const ens = DATA.cards.filter(c=>isEN(c) && state.cards[c.id].on && !state.cards[c.id].override.trim())
+    .sort((a,b)=>len(textOf(b,state.cards[b.id]))-len(textOf(a,state.cards[a.id])));
+  DATA.cards.filter(c=>isEN(c) && state.cards[c.id].on && state.cards[c.id].override.trim()).forEach(c=>skipped.add(c.id));
+  for(const c of ens){ state.cards[c.id].on=false; lowered.delete(c.id); turnedOff.push(c.id); if(totalChars()<=lim) return done(true); }
+  // 3) 困りごとカード：語り→人物共通→RP運用→必須 の順に段階を下げる（オフにはしない）
   const groups = [
-    c=>c.area==="narration" && c.criticality!=="hard",
-    c=>c.area==="character" && c.criticality!=="hard",
-    c=>c.area==="rp" && c.criticality!=="hard",
+    c=>!isEN(c) && c.area==="narration" && c.criticality!=="hard",
+    c=>!isEN(c) && c.area==="character" && c.criticality!=="hard",
+    c=>!isEN(c) && c.area==="rp" && c.criticality!=="hard",
     c=>c.criticality==="hard"
   ];
-  for(let target=2; target>=0; target--){
-    for(const g of groups){
-      let changed=false;
-      DATA.cards.forEach(c=>{ const s=state.cards[c.id]; if(s.on && !s.override.trim() && g(c) && STAGES.indexOf(s.stage)>target){ s.stage=STAGES[target]; changed=true; } });
-      if(changed && totalChars()<=lim){ save(); render(); toast("段階を下げて上限内に収めました（必須カードは最後まで残します）"); return; }
-    }
-  }
-  save(); render();
-  toast("すべて最小にしても超過します。カードを減らすか、自由記述を短くしてください。");
+  for(let t=2;t>=0;t--){ for(const g of groups){ if(lower(g,t) && totalChars()<=lim) return done(true); } }
+  done(false);
 }
 
 /* ---------- copy / io ---------- */
