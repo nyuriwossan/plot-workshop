@@ -1847,7 +1847,7 @@ function renderWorld(){
   <h2>世界と始まり <small>${z?"→「説明」欄":"→「いまの状況」欄"}</small></h2>
   <p class="lead">空欄の項目は出力されません。創作アイデアガチャなど、他のツールで作った設定を貼り付けても大丈夫です。</p>
   ${z?`<div class="panel"><label class="f mt0">題名<span class="hint">Zetaでは必須。最大${S.titleMax}字で、全体の字数に含まれます。</span></label>
-    <input type="text" data-bind="title" value="${esc(state.title)}" placeholder="例：この夏、私たち幼馴染じゃいられない"><div class="cnt" data-cnt="title" data-max="${S.titleMax}">${len(state.title)}／${S.titleMax}字</div></div>`:""}
+    <input type="text" data-bind="title" value="${esc(state.title)}" placeholder="例：マーライオン、上から出るか、下から出るか"><div class="cnt" data-cnt="title" data-max="${S.titleMax}">${len(state.title)}／${S.titleMax}字</div></div>`:""}
   <div class="panel">
     ${fld("world","世界観・舞台","時代、場所、社会の仕組みなど","例：現代の地方都市。古い商店街が舞台。／架空の王国。貴族と使用人が暮らす社会。")}
     ${fld("terms","用語の定義 <span class=\"opt\">空欄可</span>","作品だけの言葉を「用語＝意味」で1行ずつ","例：夜番＝閉店後の商店街を見回る当番。作品独自の用語がなければ空欄でOK。")}
