@@ -152,6 +152,18 @@ nav#tabs button[aria-selected="true"]{color:var(--accent);font-weight:700}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .hide{display:none!important}
 .mt0{margin-top:0}
+.guide{padding:12px 14px}
+.guide .gtitle{font-family:var(--mincho);font-size:16px}
+.guide ol{margin:6px 0 0;padding-left:1.4em;font-size:14px;line-height:1.75}
+.guide li::marker{color:var(--accent);font-weight:700}
+.area.help>summary{font-family:var(--sans);font-size:14.5px}
+.area.help>summary::after{margin-left:auto}
+.helpbody{padding:10px 4px 2px;font-size:13.5px;line-height:1.7}
+.helpbody p{margin:0 0 10px}
+.helpbody dl{margin:0 0 10px;display:grid;grid-template-columns:auto 1fr;gap:4px 10px}
+.helpbody dt{font-weight:700;white-space:nowrap}
+.helpbody dd{margin:0;color:var(--muted)}
+.opt{font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:999px;background:var(--surface2);color:var(--muted);vertical-align:1px}
 </style>
 </head>
 <body>
@@ -1664,11 +1676,30 @@ function warnings(){
 function renderService(){
   const S = svc();
   $("#tab-service").innerHTML = `
+  <div class="panel guide">
+    <b class="gtitle">30秒でわかる使い方</b>
+    <ol>
+      <li><b>設定</b>：Zeta／Zetterを選ぶ</li>
+      <li><b>カード</b>：困っていること、強化したい表現を選ぶ</li>
+      <li><b>世界・キャラ</b>：世界観、人物設定、開始状況を入力する</li>
+      <li><b>出力</b>：できた文章を、各サービスの対応する欄にコピーする</li>
+    </ol>
+  </div>
+  <details class="area help">
+    <summary>使う前に知っておきたいこと</summary>
+    <div class="helpbody">
+      <p><b>指示の効果は保証されません。</b><br>カードを追加しても、AIが必ず従うわけではありません。文章が長いほど、また明確化したほど効果が高いとも限りません。サービス・モデル・キャラ設定・会話履歴によって出力は変わります。</p>
+      <p><b>キャラ設定との矛盾に注意。</b><br>たとえば「相手から離れたくない」という人物設定と、「拒否されたら距離を取る」というルールは、場面によってぶつかることがあります。</p>
+      <p><b>カードを増やせばよいわけではありません。</b><br>似た指示の重複や、反対向きの指示に注意してください。困りごとに合わせて、必要なカードだけを選ぶのがおすすめです。</p>
+      <p><b>「字数内に収める」の結果を確認してください。</b><br>カードの文章を短くしたり、任意の表現強化カードをオフにしたりします。コピーする前に、最終結果を確かめてください。</p>
+      <p><b>作ったプロットは実際に試してください。</b><br>出力文は完成品ではなく、調整していく指示文です。思わぬ動きがあれば、選んだカードや人物設定を見直してください。</p>
+    </div>
+  </details>
+
   <h2>出力先 <small>どのサービスに貼るか</small></h2>
   <div class="svc">
     ${Object.entries(SERVICES).map(([k,v])=>`<button data-act="service" data-v="${k}" aria-pressed="${state.service===k}"><b>${v.name}</b><span>${v.desc}</span></button>`).join("")}
   </div>
-  <div class="msg info">紹介ページの内容はAIに渡りません。設定は必ず「出力」タブの欄に貼ってください。</div>
 
   <h2>表記と配置</h2>
   <div class="panel">
@@ -1708,7 +1739,7 @@ function renderService(){
     <div class="row" style="margin-top:8px"><button class="btn sm" data-act="pasteimport">貼り付けた内容を読み込む</button></div>
     <div class="row" style="margin-top:14px"><button class="btn danger sm" data-act="reset">すべて初期状態に戻す</button></div>
   </div>
-  <p class="note">カードデータ v${esc(DATA.schema_version)}｜指示文がAIにどこまで守られるかは未検証です。実機で確かめながら使ってください。</p>`;
+  <p class="note">カードデータ v${esc(DATA.schema_version)}</p>`;
 }
 
 /* ---------- render: cards ---------- */
@@ -1718,7 +1749,26 @@ function renderCards(){
   const used = items.reduce((a,i)=>a+len(rep(i.text)),0);
   let html = `
   <h2>指示カード <small>${items.length}項目・${used.toLocaleString()}字</small></h2>
-  <p class="lead">「困りごとを防ぐ」カードで困った挙動を抑え、「表現を強くする」カードで文章の質を底上げします。オンにしたカードは段階（最小〜詳細）を選んで出力されます。効果はどちらも未実証です。</p>
+  <p class="lead">「困りごとを防ぐ」カードで困った挙動を抑え、「表現を強くする」カードで文章の質を底上げします。</p>
+  <details class="area help">
+    <summary>カードの設定の見方</summary>
+    <div class="helpbody">
+      <p class="note mt0">オンにしたカードには、2つの設定が別々にあります。</p>
+      <p><b>① 指示文の種類</b></p>
+      <dl>
+        <dt>通常の指示</dt><dd>守ってほしいルールを簡潔に指定します。</dd>
+        <dt>行動を明確化（試験）</dt><dd>ルールを守るための具体的な行動も示します。対応しているカードだけ選べます。</dd>
+      </dl>
+      <p><b>② 文章の長さ</b></p>
+      <dl>
+        <dt>最小</dt><dd>字数を節約したいとき</dd>
+        <dt>短縮</dt><dd>短めにまとめたいとき</dd>
+        <dt>標準</dt><dd>ふつうの文章量で指定したいとき</dd>
+        <dt>詳細</dt><dd>条件や説明を詳しく書きたいとき</dd>
+      </dl>
+      <p><b>「必須」カードについて</b><br>「必須」は、この工房がおすすめする基本ルール（ユーザーの代筆防止など5枚）の印です。Zeta／Zetter側で入力が必須という意味ではありません。</p>
+    </div>
+  </details>
   <div class="sticky">
     <div class="row">
       <span class="note" style="margin:0">一括：</span>
@@ -1781,7 +1831,7 @@ function cardHtml(c, merged){
         <textarea data-act="override" data-id="${c.id}" placeholder="自由に書き換えられます">${esc(s.override||vset(c,s)[s.stage])}</textarea>
         <div class="row" style="margin-top:6px"><button class="btn sm" data-act="editdone">閉じる</button><button class="btn sm danger" data-act="editreset" data-id="${c.id}">元の文に戻す</button></div>`
       :`<div class="row"><button class="btn sm ghost" data-act="edit" data-id="${c.id}">文を編集</button></div>`}
-      ${s.style==="clarified"?`<p class="note">「行動を明確化」は、禁止の範囲を保ったまま、代わりに何を描くかを具体的にした試験版の文です。通常の指示より少し長くなります。</p>`:""}
+      ${s.style==="clarified"?`<p class="note">試験版の文です。通常の指示より少し長くなります。</p>`:""}
       ${c.notes?`<p class="note">${esc(prettyLabel(c.notes))}</p>`:""}
     </div>`;
   }
@@ -1799,16 +1849,16 @@ function renderWorld(){
   ${z?`<div class="panel"><label class="f mt0">題名<span class="hint">Zetaでは必須。最大${S.titleMax}字で、全体の字数に含まれます。</span></label>
     <input type="text" data-bind="title" value="${esc(state.title)}" placeholder="例：この夏、私たち幼馴染じゃいられない"><div class="cnt" data-cnt="title" data-max="${S.titleMax}">${len(state.title)}／${S.titleMax}字</div></div>`:""}
   <div class="panel">
-    ${fld("world","世界観・舞台","時代、場所、社会の仕組み、世界の法則など","例：魔法が衰えた港町。夜は灯台守が街を巡回する。")}
-    ${fld("terms","用語の定義","この世界だけの言葉。「用語：意味」と1行ずつ書くとAIが読み取りやすくなります。","例：灯守（ともりもり）：夜の街を守る役職。")}
-    ${fld("userRole","ユーザーの立場","{{user}}が何者で、どんな立場にいるか","例：{{user}}は街に流れ着いたばかりの旅人。")}
-    ${fld("relation","キャラとの関係","{{user}}とキャラの関係、互いの印象","例：初対面。キャラは{{user}}を警戒している。")}
-    ${fld("opening","開始状況","会話が始まる時点の場面","例：嵐の夜、灯台の扉を{{user}}が叩く。")}
+    ${fld("world","世界観・舞台","時代、場所、社会の仕組みなど","例：現代の地方都市。古い商店街が舞台。／架空の王国。貴族と使用人が暮らす社会。")}
+    ${fld("terms","用語の定義 <span class=\"opt\">空欄可</span>","作品だけの言葉を「用語＝意味」で1行ずつ","例：夜番＝閉店後の商店街を見回る当番。作品独自の用語がなければ空欄でOK。")}
+    ${fld("userRole","ユーザーの立場","{{user}}が何者か","例：{{user}}は新しく赴任した教師。年齢・性別は自由。")}
+    ${fld("relation","キャラとの関係","互いの関係と、いまの距離感","例：{{user}}と{{char}}は幼馴染。現在は数年ぶりに再会したばかり。")}
+    ${fld("opening","開始状況","会話が始まる時点の場面","例：雨の夕方、{{char}}が玄関先で{{user}}を待っている。ここから会話が始まる。")}
   </div>
   <h2>追加の指示 <small>${z?"→「ナレーター」欄":"→ ルールと同じ場所"}</small></h2>
   <div class="panel">
-    <label class="f mt0">カードにない指示を自由に<span class="hint">カードの指示の後ろに続けて出力されます。</span></label>
-    <textarea data-bind="extra" placeholder="例：方言は関西弁にする。">${esc(state.extra)}</textarea><div class="cnt" data-cnt="extra">${len(state.extra)}字</div>
+    <label class="f mt0">カードにない指示を自由に <span class="opt">空欄可</span><span class="hint">カードの指示の後ろに続けて出力されます。</span></label>
+    <textarea data-bind="extra" placeholder="例：人物の秘密は序盤で明かさず、会話や行動から少しずつ示す。">${esc(state.extra)}</textarea><div class="cnt" data-cnt="extra">${len(state.extra)}字</div>
   </div>`;
 }
 
