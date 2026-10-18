@@ -158,6 +158,8 @@ nav#tabs button[aria-selected="true"]{color:var(--accent);font-weight:700}
 .guide li::marker{color:var(--accent);font-weight:700}
 .area.help>summary{font-family:var(--sans);font-size:14.5px}
 .area.help>summary::after{margin-left:auto}
+.mdout{margin-top:22px}
+.mdout .fbody{font-family:var(--mono);font-size:12.5px}
 .helpbody{padding:10px 4px 2px;font-size:13.5px;line-height:1.7}
 .helpbody p{margin:0 0 10px}
 .helpbody dl{margin:0 0 10px;display:grid;grid-template-columns:auto 1fr;gap:4px 10px}
@@ -1583,52 +1585,57 @@ function switchText(w){
   }
   return rep(out);
 }
-function rulesText(){
+/* fmt: "plain"（通常テキスト）| "md"（Markdown）。どちらも同じカード・セクション情報から組み立てる */
+const mdTitle = h => h.replace(/^【|】$/g,"");
+function head(h, fmt){ return fmt==="md" ? `## ${mdTitle(h)}\n` : (state.headings ? h+"\n" : ""); }
+function bullet(t){ return "- " + t.replace(/\n/g, "\n  "); }
+function ruleLines(lines, fmt){ return (fmt==="md" ? lines.map(bullet) : lines).join("\n"); }
+function rulesText(fmt="plain"){
   const items = activeItems();
   const parts = [];
   GROUPS.forEach(a=>{
     const lines = items.filter(i=>i.area===a).map(i=>rep(i.text));
     if(!lines.length) return;
-    parts.push((state.headings?AREA_HEAD[a]+"\n":"") + lines.join("\n"));
+    parts.push(head(AREA_HEAD[a], fmt) + ruleLines(lines, fmt));
   });
   const ex = state.extra.trim();
-  if(ex) parts.push((state.headings?"【追加指示】\n":"") + rep(ex));
+  if(ex) parts.push(head("【追加指示】", fmt) + rep(ex));
   return parts.join("\n\n");
 }
-function worldText(){
+function worldText(fmt="plain"){
   const w = state.world;
   const sec = [["world","【世界観・舞台】"],["terms","【用語】"],["userRole","【{{user}}の立場】"],["relation","【関係】"],["opening","【開始状況】"]];
-  return sec.filter(([k])=>w[k].trim()).map(([k,h])=>rep((state.headings?h+"\n":"")+w[k].trim())).join("\n\n");
+  return sec.filter(([k])=>w[k].trim()).map(([k,h])=>rep(head(h, fmt)+w[k].trim())).join("\n\n");
 }
-function charProfileText(c){
+function charProfileText(c, fmt="plain"){
   const parts = [];
   if(c.profile.trim()) parts.push(rep(c.profile.trim()));
   const sw = c.switches.map(switchText).filter(Boolean);
-  if(sw.length) parts.push((state.headings?"【切り替わり】\n":"") + sw.join("\n"));
+  if(sw.length) parts.push(head("【切り替わり】", fmt) + ruleLines(sw, fmt));
   return parts.join("\n\n");
 }
-function repeatText(){
+function repeatText(fmt="plain"){
   const lines = activeItems().filter(i=>i.hard).map(i=>rep(i.min));
-  return lines.length ? (state.headings?"【再確認】\n":"") + lines.join("\n") : "";
+  return lines.length ? head("【再確認】", fmt) + ruleLines(lines, fmt) : "";
 }
-function buildOutput(){
+function buildOutput(fmt="plain"){
   const S = svc(); const fields = [];
-  const rules = rulesText(), world = worldText();
+  const rules = rulesText(fmt), world = worldText(fmt);
   if(state.service==="zeta"){
     fields.push({label:"題名", text:state.title.trim(), max:S.titleMax, counted:true});
     fields.push({label:"説明", text:world, counted:true, note:"世界観・関係・開始状況"});
     fields.push({label:"ナレーター（非公開）", text:rules, counted:true, note:"RPルール・語り・人物共通ルール"});
     state.chars.forEach((c,i)=>{
       fields.push({label:`${charName(i)}｜名前`, text:c.name.trim(), max:S.nameMax, counted:true});
-      fields.push({label:`${charName(i)}｜プロフィール`, text:charProfileText(c), counted:true});
+      fields.push({label:`${charName(i)}｜プロフィール`, text:charProfileText(c, fmt), counted:true});
     });
   } else {
     const place = state.zetterPlace;
-    const sit = [place!=="cast"?rules:"", world, state.zetterRepeat?repeatText():""].filter(Boolean).join("\n\n");
+    const sit = [place!=="cast"?rules:"", world, state.zetterRepeat?repeatText(fmt):""].filter(Boolean).join("\n\n");
     fields.push({label:"いまの状況", text:sit, counted:true, note:place!=="cast"?"ルール＋世界観・関係・開始状況":"世界観・関係・開始状況"});
     state.chars.forEach((c,i)=>{
       fields.push({label:`${charName(i)}｜名前`, text:c.name.trim(), max:S.nameMax, counted:S.countNames});
-      const prof = [charProfileText(c), place!=="situation"?rules:""].filter(Boolean).join("\n\n");
+      const prof = [charProfileText(c, fmt), place!=="situation"?rules:""].filter(Boolean).join("\n\n");
       fields.push({label:`${charName(i)}｜性格・設定`, text:prof, counted:true});
     });
   }
@@ -1923,16 +1930,40 @@ function renderOut(){
   else html += `<div class="msg ok">修正が必要な点はありません。</div>`;
   if(info.length) html += `<details class="infos"><summary>重なり・参考情報（${info.length}）</summary>${info.map(w=>`<div class="msg info">${w.msg}</div>`).join("")}</details>`;
   html += `<div class="msg info">ここにある欄だけがAIに届きます。紹介ページはAIに渡らないので、設定は書かないでください。</div>`;
-  o.fields.forEach((f,k)=>{
-    const over = f.max && f.count>f.max;
-    html += `<div class="field">
+  o.fields.forEach((f,k)=>{ html += fieldHtml(f, k, "copy"); });
+  html += mdSection(o);
+  $("#tab-out").innerHTML = html;
+}
+let mdOpen = false;
+function fieldHtml(f, k, act){
+  const over = f.max && f.count>f.max;
+  return `<div class="field">
       <div class="fhead"><div><b>${esc(f.label)}</b>${f.counted?`<span class="tag">字数に含む</span>`:`<span class="tag nocount">字数外</span>`}</div>
-        <button class="btn sm primary" data-act="copy" data-k="${k}" ${f.text?"":"disabled"}>コピー</button></div>
+        <button class="btn sm primary" data-act="${act}" data-k="${k}" ${f.text?"":"disabled"}>コピー</button></div>
       <div class="fbody">${esc(f.text)}</div>
       <div class="ffoot"><span>${f.note?esc(f.note):""}</span><span class="${over?"cnt over":""}">${f.count}字${f.max?`／${f.max}`:""}</span></div>
     </div>`;
-  });
-  $("#tab-out").innerHTML = html;
+}
+function mdSection(plain){
+  const m = buildOutput("md");
+  const diff = m.total - plain.total;
+  const pct = Math.min(100, m.total/m.limit*100);
+  const cls = m.total>m.limit?"over":(m.total>m.limit*0.9?"near":"");
+  let h = `<details class="area help mdout" id="mdOut" ${mdOpen?"open":""}>
+    <summary>Markdown形式で出力（任意）</summary>
+    <div class="helpbody">
+      <p class="note mt0">見出しや箇条書きで構造を整理した形式です。内容は通常テキスト版と同じで、書式だけが違います。AIへの指示の効果を保証するものではありません。</p>
+      <div class="panel" style="margin:8px 0">
+        <div class="row" style="justify-content:space-between;align-items:baseline">
+          <span class="big" style="font-size:22px">${m.total.toLocaleString()}<span style="font-size:13px;color:var(--muted)"> ／ ${m.limit.toLocaleString()}字</span></span>
+          <span class="note">通常版より ${diff>=0?"+":""}${diff.toLocaleString()}字</span>
+        </div>
+        <div class="bar"><i class="${cls}" style="width:${pct}%"></i></div>
+        <p class="note">#、-、改行などの記号も字数に含めています。見出しは「見出し【】」の設定にかかわらず ## で付きます。</p>
+      </div>
+      ${m.total>m.limit?`<div class="msg error"><b>Markdown版は字数超過</b>：${m.total.toLocaleString()}／${m.limit.toLocaleString()}字（超過 ${(m.total-m.limit).toLocaleString()}字）。Markdown版では文を自動で短くしません。カードを減らすか段階を下げてください。</div>`:""}`;
+  m.fields.forEach((f,k)=>{ h += fieldHtml(f, k, "copymd"); });
+  return h + `</div></details>`;
 }
 
 /* ---------- meter ---------- */
@@ -2012,6 +2043,7 @@ document.addEventListener("click", async e=>{
     case "addsw": state.chars[+b.dataset.i].switches.push(newSwitch()); break;
     case "delsw": state.chars[+b.dataset.i].switches.splice(+b.dataset.j,1); break;
     case "copy": { const f = buildOutput().fields[+b.dataset.k]; if(await copyText(f.text)) toast(`「${f.label}」をコピーしました`); return; }
+    case "copymd": { const f = buildOutput("md").fields[+b.dataset.k]; if(await copyText(f.text)) toast(`「${f.label}」をMarkdownでコピーしました`); return; }
     case "export": exportJson(); return;
     case "copyjson": if(await copyText(JSON.stringify(packState(),null,2))) toast("JSONをコピーしました"); return;
     case "import": $("#fileIn").click(); return;
@@ -2021,6 +2053,7 @@ document.addEventListener("click", async e=>{
   }
   save(); render();
 });
+document.addEventListener("toggle", e=>{ if(e.target.id==="mdOut") mdOpen = e.target.open; }, true);
 $("#fileIn").addEventListener("change", e=>{
   const f = e.target.files[0]; if(!f) return;
   const r = new FileReader(); r.onload = ()=>importText(r.result); r.readAsText(f); e.target.value="";
