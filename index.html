@@ -95,7 +95,7 @@ input[type=text]:focus,textarea:focus,select:focus{outline:2px solid var(--accen
 .cid{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.04em}
 .clabel{font-size:14.5px;font-weight:600;line-height:1.45}
 .badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}
-.bdg{font-size:10.5px;padding:1px 7px;border-radius:999px;background:var(--surface2);color:var(--muted)}
+.bdg{white-space:nowrap;font-size:10.5px;padding:1px 7px;border-radius:999px;background:var(--surface2);color:var(--muted)}
 .bdg.hard{background:var(--hard-soft);color:var(--hard);font-weight:700}
 .bdg.edit{background:var(--warn-soft);color:var(--warn)}
 .bdg.opt{background:var(--info-soft);color:var(--info)}
@@ -159,6 +159,14 @@ nav#tabs button[aria-selected="true"]{color:var(--accent);font-weight:700}
 .area.help>summary{font-family:var(--sans);font-size:14.5px}
 .area.help>summary::after{margin-left:auto}
 .mdout{margin-top:22px}
+.area.sub{margin-top:8px}
+.area.sub>summary{font-family:var(--sans);font-size:14px;padding:10px 12px}
+.area.sub>summary::after{margin-left:auto}
+.area.sub .area.sub>summary{background:var(--surface);font-size:13.5px;padding:9px 12px}
+.area.tpl{margin:12px 0 4px}
+.area.tpl>.helpbody{padding-top:6px}
+.tplprev{white-space:pre-wrap;word-break:break-word;font-family:var(--mono);font-size:12px;line-height:1.6;background:var(--surface2);border-radius:8px;padding:8px 10px;margin:4px 0 0;min-height:2.4em}
+.tplprev:empty::before{content:"（入力するとここに出力が表示されます）";color:var(--muted);font-family:var(--sans)}
 .mdout .fbody{font-family:var(--mono);font-size:12.5px}
 .helpbody{padding:10px 4px 2px;font-size:13.5px;line-height:1.7}
 .helpbody p{margin:0 0 10px}
@@ -1493,11 +1501,14 @@ function defaultState(){
     userMode:"keep", charMode:"auto", headings:true,
     zetterPlace:"situation", zetterRepeat:false,
     world:{world:"",terms:"",userRole:"",relation:"",opening:""},
+    worldTpl:newTpl(),
     extra:"",
     chars:[newChar()]
   };
 }
-function newChar(){ return {name:"",profile:"",switches:[]}; }
+function newTpl(){ return {on:false, v:{}}; }
+function normTpl(t){ const o = Object.assign(newTpl(), t&&typeof t==="object"?t:{}); o.on=!!o.on; o.v = (o.v && typeof o.v==="object") ? Object.assign({}, o.v) : {}; return o; }
+function newChar(){ return {name:"",profile:"",switches:[],tpl:newTpl()}; }
 function newSwitch(){ return {normal:"",trigger:"",changed:"",ret:"",permanent:false}; }
 function normalize(s){
   const d = defaultState();
@@ -1507,7 +1518,8 @@ function normalize(s){
   if(s.cards) for(const id in s.cards){ if(o.cards[id]) o.cards[id] = Object.assign({}, d.cards[id], s.cards[id]); }
   o.merge = Object.assign({}, d.merge, s.merge||{});
   o.world = Object.assign({}, d.world, s.world||{});
-  o.chars = Array.isArray(s.chars) && s.chars.length ? s.chars.map(c=>Object.assign(newChar(), c, {switches:(c.switches||[]).map(w=>Object.assign(newSwitch(), w))})) : d.chars;
+  o.chars = Array.isArray(s.chars) && s.chars.length ? s.chars.map(c=>Object.assign(newChar(), c, {switches:(c.switches||[]).map(w=>Object.assign(newSwitch(), w)), tpl:normTpl(c.tpl)})) : d.chars;
+  o.worldTpl = normTpl(s.worldTpl);
   if(!SERVICES[o.service]) o.service = "zeta";
   for(const id in o.cards){ const k=o.cards[id]; if(!STAGES.includes(k.stage)) k.stage="standard"; if(k.style!=="clarified" || !CARD[id].clarified) k.style="base"; if(typeof k.override!=="string") k.override=""; }
   return o;
@@ -1585,6 +1597,68 @@ function switchText(w){
   }
   return rep(out);
 }
+/* ---------- Markdownテンプレート（任意） ----------
+   type: kv=「項目：値」1行 / text=長文を1項目のまま / list=1行1項目（sub=複数行なら小見出し付き） */
+const CHAR_TPL = [
+  {key:"basic", h:"【基本情報】", items:[
+    {k:"gender", label:"性別", type:"kv", ph:"男／女／不明"},
+    {k:"age", label:"年齢", type:"kv", ph:"26歳"},
+    {k:"height", label:"身長", type:"kv", ph:"182cm"},
+    {k:"role", label:"種族・立場・職業", type:"kv", ph:"人間／屋敷の執事"} ]},
+  {key:"looks", h:"【外見】", items:[
+    {k:"hairColor", label:"髪色", type:"kv", ph:"銀"},
+    {k:"hairStyle", label:"髪型", type:"kv", ph:"ショートヘア"},
+    {k:"eyes", label:"目", type:"kv", ph:"灰色"},
+    {k:"build", label:"体格", type:"kv", ph:"細身で背が高い"},
+    {k:"outfit", label:"服装", type:"kv", ph:"黒いシャツ、白いエプロン"},
+    {k:"features", label:"特徴", type:"list", sub:false, ph:"左目の下に泣きぼくろ\n指先がいつも冷たい"} ]},
+  {key:"persona", h:"【性格】", items:[
+    {k:"surface", label:"表向き", type:"text", ph:"穏やかで世話焼き"},
+    {k:"core", label:"本質", type:"text", ph:"面倒くさがりで計算高い"},
+    {k:"principle", label:"行動原理", type:"text", ph:"相手の幸せより、自分がそばにいることを優先する"},
+    {k:"stance", label:"対人姿勢", type:"text", ph:"脅しは使わず、静かに状況を動かす"} ]},
+  {key:"behavior", h:"【行動】", note:"状況によって変わる行動は、下の「切り替わり」で入力します（二重に入力する必要はありません）。", items:[
+    {k:"daily", label:"普段の行動", type:"list", sub:true, ph:"朝は必ず紅茶を淹れる\n夜は書庫で本を読む"},
+    {k:"habits", label:"特徴的な癖", type:"list", sub:true, ph:"考えるとき眼鏡を押し上げる"} ]},
+  {key:"taste", h:"【嗜好】", items:[
+    {k:"likes", label:"好きなもの", type:"list", sub:true, ph:"甘いもの\n雨の音"},
+    {k:"dislikes", label:"苦手なもの", type:"list", sub:true, ph:"雷"},
+    {k:"hobbies", label:"趣味", type:"list", sub:true, ph:"古書集め"} ]},
+  {key:"voice", h:"【口調】", items:[
+    {k:"first", label:"一人称", type:"kv", ph:"俺"},
+    {k:"second", label:"二人称", type:"kv", ph:"お前"},
+    {k:"speech", label:"話し方", type:"text", ph:"丁寧語だが、気を抜くと語尾が崩れる"},
+    {k:"lines", label:"台詞例", type:"list", sub:true, ph:"「……置いといて」\n「別に、心配なんてしてない」"} ]},
+  {key:"history", h:"【経歴・秘密】", items:[
+    {k:"past", label:"過去", type:"text", ph:"幼いころ屋敷に引き取られた"},
+    {k:"goal", label:"現在の目的", type:"text", ph:"主人の家を立て直す"},
+    {k:"secret", label:"隠していること", type:"text", ph:"実は主人の遠縁にあたる"} ]}
+];
+const WORLD_TPL_ITEMS = [
+  {k:"era", label:"時代", type:"kv", ph:"現代／近未来／架空の中世"},
+  {k:"place", label:"舞台・場所", type:"text", ph:"地方都市の古い商店街"},
+  {k:"society", label:"社会制度・文化", type:"list", sub:true, ph:"身分制度が残っている\n魔法は国家資格制"},
+  {k:"rules", label:"特殊なルール", type:"list", sub:true, ph:"夜は外出が禁じられている\n嘘をつくと声が出なくなる"}
+];
+const tlines = v => (v||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+function tplItem(it, v, fmt){
+  if(it.type==="list"){
+    const ls = tlines(v); if(!ls.length) return "";
+    const dot = fmt==="md" ? "- " : "・";
+    if(!it.sub) return ls.map(l=>dot+l).join("\n");
+    if(ls.length===1) return (fmt==="md"?"- ":"") + `${it.label}：${ls[0]}`;
+    return (fmt==="md" ? `### ${it.label}\n` : `${it.label}：\n`) + ls.map(l=>dot+l).join("\n");
+  }
+  const t = (v||"").trim(); if(!t) return "";
+  const line = `${it.label}：${it.type==="text" ? t.replace(/\r?\n/g, fmt==="md"?"\n  ":"\n") : t.replace(/\s*\r?\n\s*/g," ")}`;
+  return fmt==="md" ? "- "+line : line;
+}
+function tplItems(items, vals, fmt){ return items.map(it=>tplItem(it, vals[it.k], fmt)).filter(Boolean).join("\n"); }
+function charTplText(c, fmt){
+  if(!c.tpl || !c.tpl.on) return "";
+  return CHAR_TPL.map(cat=>{ const body = tplItems(cat.items, c.tpl.v, fmt); return body ? head(cat.h, fmt)+body : ""; }).filter(Boolean).map(rep).join("\n");
+}
+
 /* fmt: "plain"（通常テキスト）| "md"（Markdown）。どちらも同じカード・セクション情報から組み立てる */
 const mdTitle = h => h.replace(/^【|】$/g,"");
 function head(h, fmt){ return fmt==="md" ? `## ${mdTitle(h)}\n` : (state.headings ? h+"\n" : ""); }
@@ -1605,11 +1679,19 @@ function rulesText(fmt="plain"){
 function worldText(fmt="plain"){
   const w = state.world;
   const sec = [["world","【世界観・舞台】"],["terms","【用語】"],["userRole","【{{user}}の立場】"],["relation","【関係】"],["opening","【開始状況】"]];
-  return sec.filter(([k])=>w[k].trim()).map(([k,h])=>rep(head(h, fmt)+w[k].trim())).join("\n\n");
+  const T = state.worldTpl && state.worldTpl.on;
+  const body = k => {
+    if(!T) return w[k].trim();
+    if(k==="world") return [tplItems(WORLD_TPL_ITEMS, state.worldTpl.v, fmt), w.world.trim()].filter(Boolean).join(fmt==="md"?"\n\n":"\n");
+    if(k==="terms" && fmt==="md") return tlines(w.terms).map(l=>"- "+l).join("\n");
+    return w[k].trim();
+  };
+  return sec.map(([k,h])=>[h, body(k)]).filter(([,b])=>b).map(([h,b])=>rep(head(h, fmt)+b)).join("\n\n");
 }
 function charProfileText(c, fmt="plain"){
   const parts = [];
   if(c.profile.trim()) parts.push(rep(c.profile.trim()));
+  const tt = charTplText(c, fmt); if(tt) parts.push(tt);
   const sw = c.switches.map(switchText).filter(Boolean);
   if(sw.length) parts.push(head("【切り替わり】", fmt) + ruleLines(sw, fmt));
   return parts.join("\n\n");
@@ -1845,8 +1927,47 @@ function cardHtml(c, merged){
   return h + `</div>`;
 }
 
+/* ---------- render: template forms ---------- */
+const openFolds = new Set();
+function tplField(path, it, v){
+  const ph = esc("例：" + it.ph.replace(/\n/g, "\n"));
+  if(it.type==="kv") return `<label class="f">${it.label}</label><input type="text" data-bind="${path}.${it.k}" value="${esc(v||"")}" placeholder="${esc("例："+it.ph)}">`;
+  const hint = it.type==="list" ? `<span class="hint">1行に1項目（改行で分けます）</span>` : "";
+  return `<label class="f">${it.label}${hint}</label><textarea data-bind="${path}.${it.k}" placeholder="${ph}" style="min-height:${it.type==="list"?72:60}px">${esc(v||"")}</textarea>`;
+}
+function fold(id, title, inner, cls=""){
+  return `<details class="area sub ${cls}" data-fold="${id}" ${openFolds.has(id)?"open":""}><summary>${title}</summary><div class="helpbody">${inner}</div></details>`;
+}
+function tplPreview(kind, i){
+  if(kind==="w"){
+    const keep = state.worldTpl.on; state.worldTpl.on = true;
+    const t = tplItems(WORLD_TPL_ITEMS, state.worldTpl.v, "md");
+    state.worldTpl.on = keep; return rep(t);
+  }
+  const c = state.chars[i]; const keep = c.tpl.on; c.tpl.on = true;
+  const t = charTplText(c, "md"); c.tpl.on = keep; return t;
+}
+function tplBlock(kind, i){
+  if(!state.worldTpl) state.worldTpl = newTpl();
+  if(kind!=="w" && !state.chars[i].tpl) state.chars[i].tpl = newTpl();
+  const tpl = kind==="w" ? state.worldTpl : state.chars[i].tpl;
+  const path = kind==="w" ? "worldTpl" : `chars.${i}.tpl`;
+  const id = kind==="w" ? "w" : `c${i}`;
+  let inner = `<label class="toggle"><span>テンプレートの内容を出力に含める<small>オフにしても入力した内容は消えません。オンの間だけ出力されます。</small></span><input type="checkbox" class="sw" data-bind="${path}.on" ${tpl.on?"checked":""}></label>`;
+  if(kind==="w"){
+    inner += `<p class="note">「世界観・舞台」を項目に分けて入力できます。用語・立場・関係・開始状況は下の欄をそのまま使います。</p>`;
+    inner += WORLD_TPL_ITEMS.map(it=>tplField(`${path}.v`, it, tpl.v[it.k])).join("");
+  } else {
+    inner += `<p class="note">名前は上の「名前」欄が使われます（テンプレートには重ねて出力しません）。空欄の項目は出力されません。</p>`;
+    inner += CHAR_TPL.map(cat=>fold(`${id}-${cat.key}`, mdTitle(cat.h), (cat.note?`<p class="note mt0">${cat.note}</p>`:"") + cat.items.map(it=>tplField(`${path}.v`, it, tpl.v[it.k])).join(""))).join("");
+  }
+  inner += `<label class="f">出力プレビュー（Markdown）</label><pre class="tplprev" data-tplprev="${kind==="w"?"w":i}">${esc(tplPreview(kind, i))}</pre>`;
+  return fold(id, `Markdownテンプレートを使う（任意）${tpl.on?`<span class="bdg clar" style="margin-left:6px">オン</span>`:""}`, inner, "tpl");
+}
+
 /* ---------- render: world ---------- */
 function renderWorld(){
+  if(!state.worldTpl) state.worldTpl = newTpl();
   const S = svc(); const z = state.service==="zeta";
   const fld = (k,label,hint,ph)=>`<label class="f">${label}<span class="hint">${hint}</span></label>
     <textarea data-bind="world.${k}" placeholder="${esc(ph)}">${esc(state.world[k])}</textarea><div class="cnt" data-cnt="world.${k}">${len(state.world[k])}字</div>`;
@@ -1855,9 +1976,12 @@ function renderWorld(){
   <p class="lead">空欄の項目は出力されません。創作アイデアガチャなど、他のツールで作った設定を貼り付けても大丈夫です。</p>
   ${z?`<div class="panel"><label class="f mt0">題名<span class="hint">Zetaでは必須。最大${S.titleMax}字で、全体の字数に含まれます。</span></label>
     <input type="text" data-bind="title" value="${esc(state.title)}" placeholder="例：マーライオン、上から出るか、下から出るか"><div class="cnt" data-cnt="title" data-max="${S.titleMax}">${len(state.title)}／${S.titleMax}字</div></div>`:""}
+  ${tplBlock("w")}
   <div class="panel">
-    ${fld("world","世界観・舞台","時代、場所、社会の仕組みなど","例：現代の地方都市。古い商店街が舞台。／架空の王国。貴族と使用人が暮らす社会。")}
-    ${fld("terms","用語の定義 <span class=\"opt\">空欄可</span>","作品だけの言葉を「用語＝意味」で1行ずつ","例：夜番＝閉店後の商店街を見回る当番。作品独自の用語がなければ空欄でOK。")}
+    ${state.worldTpl.on
+      ? fld("world","その他の世界観 <span class=\"opt\">空欄可</span>","テンプレートの項目に入らないことを自由に","例：街の人は互いの家の事情をよく知っている。")
+      : fld("world","世界観・舞台","時代、場所、社会の仕組みなど","例：現代の地方都市。古い商店街が舞台。／架空の王国。貴族と使用人が暮らす社会。")}
+    ${fld("terms","用語の定義 <span class=\"opt\">空欄可</span>",state.worldTpl.on?"1行に1語。「用語＝意味」で書きます":"作品だけの言葉を「用語＝意味」で1行ずつ","例：夜番＝閉店後の商店街を見回る当番。作品独自の用語がなければ空欄でOK。")}
     ${fld("userRole","ユーザーの立場","{{user}}が何者か","例：{{user}}は新しく赴任した教師。年齢・性別は自由。")}
     ${fld("relation","キャラとの関係","互いの関係と、いまの距離感","例：{{user}}と{{char}}は幼馴染。現在は数年ぶりに再会したばかり。")}
     ${fld("opening","開始状況","会話が始まる時点の場面","例：雨の夕方、{{char}}が玄関先で{{user}}を待っている。ここから会話が始まる。")}
@@ -1884,6 +2008,7 @@ function renderChars(){
       <label class="f">${z?"プロフィール":"性格・設定"}<span class="hint">性格・話し方・背景など。例：「優しい」より「お礼が言えず『……置いといて』と言いながら必ず飲む」。</span></label>
       <textarea data-bind="chars.${i}.profile" placeholder="性格・話し方・背景など" style="min-height:120px">${esc(c.profile)}</textarea>
       <div class="cnt" data-cnt="chars.${i}.profile">${len(c.profile)}字</div>
+      ${tplBlock("c", i)}
       <h3>切り替わり <span class="note">普段と違う状態になる条件</span></h3>`;
     c.switches.forEach((w,j)=>{
       const p = `chars.${i}.switches.${j}`;
@@ -2006,6 +2131,8 @@ document.addEventListener("input", e=>{
     const mm = t.dataset.bind.match(/^chars\.(\d+)\.switches\.(\d+)\./);
     if(mm){ const p=document.querySelector(`[data-swprev="${mm[1]}.${mm[2]}"]`); if(p) p.textContent = switchText(state.chars[mm[1]].switches[mm[2]]); }
     if(/^chars\.\d+\.name$/.test(t.dataset.bind)){ const i=+t.dataset.bind.split(".")[1]; const h=document.querySelector(`[data-charhead="${i}"]`); if(h) h.textContent=charName(i); document.querySelectorAll("[data-swprev]").forEach(p=>{ const [a,b]=p.dataset.swprev.split("."); p.textContent=switchText(state.chars[a].switches[b]); }); }
+    const tp = t.dataset.bind.match(/^chars\.(\d+)\.(tpl|name)/) || (/^worldTpl\./.test(t.dataset.bind) ? [0,"w"] : null);
+    if(tp){ const k = tp[1]; const el = document.querySelector(`[data-tplprev="${k}"]`); if(el) el.textContent = tplPreview(k==="w"?"w":"c", +k); }
     if(t.type==="checkbox" || t.tagName==="SELECT") render(); else renderMeter();
     return;
   }
@@ -2039,7 +2166,7 @@ document.addEventListener("click", async e=>{
     case "editdone": editing = null; break;
     case "editreset": state.cards[id].override=""; editing=null; break;
     case "addchar": state.chars.push(newChar()); break;
-    case "delchar": if(confirm(`${charName(+b.dataset.i)}を削除しますか？`)) state.chars.splice(+b.dataset.i,1); else return; break;
+    case "delchar": if(confirm(`${charName(+b.dataset.i)}を削除しますか？`)){ state.chars.splice(+b.dataset.i,1); [...openFolds].filter(k=>k[0]==="c").forEach(k=>openFolds.delete(k)); } else return; break;
     case "addsw": state.chars[+b.dataset.i].switches.push(newSwitch()); break;
     case "delsw": state.chars[+b.dataset.i].switches.splice(+b.dataset.j,1); break;
     case "copy": { const f = buildOutput().fields[+b.dataset.k]; if(await copyText(f.text)) toast(`「${f.label}」をコピーしました`); return; }
@@ -2053,7 +2180,10 @@ document.addEventListener("click", async e=>{
   }
   save(); render();
 });
-document.addEventListener("toggle", e=>{ if(e.target.id==="mdOut") mdOpen = e.target.open; }, true);
+document.addEventListener("toggle", e=>{
+  if(e.target.id==="mdOut") mdOpen = e.target.open;
+  const f = e.target.dataset && e.target.dataset.fold; if(f){ e.target.open ? openFolds.add(f) : openFolds.delete(f); }
+}, true);
 $("#fileIn").addEventListener("change", e=>{
   const f = e.target.files[0]; if(!f) return;
   const r = new FileReader(); r.onload = ()=>importText(r.result); r.readAsText(f); e.target.value="";
