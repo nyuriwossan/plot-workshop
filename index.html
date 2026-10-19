@@ -1613,8 +1613,8 @@ const CHAR_TPL = [
     {k:"outfit", label:"服装", type:"kv", ph:"黒いシャツ、白いエプロン"},
     {k:"features", label:"特徴", type:"list", sub:false, ph:"左目の下に泣きぼくろ\n指先がいつも冷たい"} ]},
   {key:"persona", h:"【性格】", items:[
-    {k:"surface", label:"表向き", type:"text", ph:"穏やかで世話焼き"},
-    {k:"core", label:"本質", type:"text", ph:"面倒くさがりで計算高い"},
+    {k:"surface", label:"表向き", type:"list", sub:true, ph:"穏やか\n世話焼き"},
+    {k:"core", label:"本質", type:"list", sub:true, ph:"面倒くさがり\n計算高い"},
     {k:"principle", label:"行動原理", type:"text", ph:"相手の幸せより、自分がそばにいることを優先する"},
     {k:"stance", label:"対人姿勢", type:"text", ph:"脅しは使わず、静かに状況を動かす"} ]},
   {key:"behavior", h:"【行動】", note:"状況によって変わる行動は、下の「切り替わり」で入力します（二重に入力する必要はありません）。", items:[
@@ -1627,7 +1627,7 @@ const CHAR_TPL = [
   {key:"voice", h:"【口調】", items:[
     {k:"first", label:"一人称", type:"kv", ph:"俺"},
     {k:"second", label:"二人称", type:"kv", ph:"お前"},
-    {k:"speech", label:"話し方", type:"text", ph:"丁寧語だが、気を抜くと語尾が崩れる"},
+    {k:"speech", label:"話し方", type:"list", sub:true, ph:"丁寧語\n気を抜くと語尾が崩れる"},
     {k:"lines", label:"台詞例", type:"list", sub:true, ph:"「……置いといて」\n「別に、心配なんてしてない」"} ]},
   {key:"history", h:"【経歴・秘密】", items:[
     {k:"past", label:"過去", type:"text", ph:"幼いころ屋敷に引き取られた"},
@@ -1647,7 +1647,7 @@ function tplItem(it, v, fmt){
     const dot = fmt==="md" ? "- " : "・";
     if(!it.sub) return ls.map(l=>dot+l).join("\n");
     if(ls.length===1) return (fmt==="md"?"- ":"") + `${it.label}：${ls[0]}`;
-    return (fmt==="md" ? `### ${it.label}\n` : `${it.label}：\n`) + ls.map(l=>dot+l).join("\n");
+    return fmt==="md" ? `- ${it.label}：\n` + ls.map(l=>"  - "+l).join("\n") : `${it.label}：\n` + ls.map(l=>"・"+l).join("\n");
   }
   const t = (v||"").trim(); if(!t) return "";
   const line = `${it.label}：${it.type==="text" ? t.replace(/\r?\n/g, fmt==="md"?"\n  ":"\n") : t.replace(/\s*\r?\n\s*/g," ")}`;
@@ -1932,7 +1932,7 @@ const openFolds = new Set();
 function tplField(path, it, v){
   const ph = esc("例：" + it.ph.replace(/\n/g, "\n"));
   if(it.type==="kv") return `<label class="f">${it.label}</label><input type="text" data-bind="${path}.${it.k}" value="${esc(v||"")}" placeholder="${esc("例："+it.ph)}">`;
-  const hint = it.type==="list" ? `<span class="hint">1行に1項目（改行で分けます）</span>` : "";
+  const hint = it.type==="list" ? `<span class="hint">1行に1項目（改行ごとに箇条書きになります）</span>` : `<span class="hint">文章で自由に入力（改行しても1つの項目のままです）</span>`;
   return `<label class="f">${it.label}${hint}</label><textarea data-bind="${path}.${it.k}" placeholder="${ph}" style="min-height:${it.type==="list"?72:60}px">${esc(v||"")}</textarea>`;
 }
 function fold(id, title, inner, cls=""){
