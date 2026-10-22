@@ -167,6 +167,9 @@ nav#tabs button[aria-selected="true"]{color:var(--accent);font-weight:700}
 .area.sub>summary::after{margin-left:auto}
 .area.sub .area.sub>summary{background:var(--surface);font-size:13.5px;padding:9px 12px}
 .area.tpl{margin:12px 0 4px}
+.xbox{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
+.xitem{background:var(--surface2);border-radius:10px;padding:8px;margin-bottom:8px}
+.xitem input[type=text]{min-width:0}
 .area.tpl>.helpbody{padding-top:6px}
 .tplprev{white-space:pre-wrap;word-break:break-word;font-family:var(--mono);font-size:12px;line-height:1.6;background:var(--surface2);border-radius:8px;padding:8px 10px;margin:4px 0 0;min-height:2.4em}
 .tplprev:empty::before{content:"（入力するとここに出力が表示されます）";color:var(--muted);font-family:var(--sans)}
@@ -1505,11 +1508,23 @@ function defaultState(){
     zetterPlace:"situation", zetterRepeat:false,
     world:{world:"",terms:"",userRole:"",relation:"",opening:""},
     worldTpl:newTpl(),
+    userProfile:newProfile(),
     extra:"",
     chars:[newChar()]
   };
 }
 function newTpl(){ return {on:false, v:{}}; }
+/* ユーザーのトークプロフィール：固定項目 v ／ カテゴリ内の追加項目 extra[catKey] ／ 追加カテゴリ cats ／ 自由記述 free */
+function newProfile(){ return {v:{}, extra:{}, cats:[], free:""}; }
+function normItems(a){ return Array.isArray(a) ? a.filter(x=>x&&typeof x==="object").map(x=>({label:String(x.label||""), value:String(x.value||"")})) : []; }
+function normProfile(u){
+  const o = newProfile(); if(!u || typeof u!=="object") return o;
+  if(u.v && typeof u.v==="object") o.v = Object.assign({}, u.v);
+  if(u.extra && typeof u.extra==="object") for(const k in u.extra) o.extra[k] = normItems(u.extra[k]);
+  if(Array.isArray(u.cats)) o.cats = u.cats.filter(c=>c&&typeof c==="object").map(c=>({name:String(c.name||""), items:normItems(c.items)}));
+  o.free = typeof u.free==="string" ? u.free : "";
+  return o;
+}
 function normTpl(t){ const o = Object.assign(newTpl(), t&&typeof t==="object"?t:{}); o.on=!!o.on; o.v = (o.v && typeof o.v==="object") ? Object.assign({}, o.v) : {}; return o; }
 function newChar(){ return {name:"",profile:"",switches:[],tpl:newTpl()}; }
 function newSwitch(){ return {normal:"",trigger:"",changed:"",ret:"",permanent:false}; }
@@ -1523,6 +1538,7 @@ function normalize(s){
   o.world = Object.assign({}, d.world, s.world||{});
   o.chars = Array.isArray(s.chars) && s.chars.length ? s.chars.map(c=>Object.assign(newChar(), c, {switches:(c.switches||[]).map(w=>Object.assign(newSwitch(), w)), tpl:normTpl(c.tpl)})) : d.chars;
   o.worldTpl = normTpl(s.worldTpl);
+  o.userProfile = normProfile(s.userProfile);
   if(!SERVICES[o.service]) o.service = "zeta";
   for(const id in o.cards){ const k=o.cards[id]; if(!STAGES.includes(k.stage)) k.stage="standard"; if(k.style!=="clarified" || !CARD[id].clarified) k.style="base"; if(typeof k.override!=="string") k.override=""; }
   return o;
@@ -1661,6 +1677,63 @@ function charTplText(c, fmt){
   if(!c.tpl || !c.tpl.on) return "";
   return CHAR_TPL.map(cat=>{ const body = tplItems(cat.items, c.tpl.v, fmt); return body ? head(cat.h, fmt)+body : ""; }).filter(Boolean).map(rep).join("\n");
 }
+
+/* ---------- ユーザーのトークプロフィール（プロット本体とは独立。字数も別に数える） ---------- */
+const UP_LIMIT = {zeta:1000, zetter:2000};
+const USER_TPL = [
+  {key:"basic", h:"【基本情報】", items:[
+    {k:"name", label:"名前・呼び名", type:"kv", ph:"ユウ（呼び名：ユウさん）"},
+    {k:"gender", label:"性別", type:"kv", ph:"女"},
+    {k:"age", label:"年齢", type:"kv", ph:"24歳"},
+    {k:"height", label:"身長", type:"kv", ph:"160cm"},
+    {k:"role", label:"種族・職業", type:"kv", ph:"人間／図書館の司書"} ]},
+  {key:"looks", h:"【外見】", items:[
+    {k:"hairColor", label:"髪色", type:"kv", ph:"黒"},
+    {k:"hairStyle", label:"髪型", type:"kv", ph:"肩までのボブ"},
+    {k:"eyes", label:"目", type:"kv", ph:"茶色"},
+    {k:"build", label:"体格", type:"kv", ph:"小柄"},
+    {k:"outfit", label:"服装", type:"kv", ph:"紺のカーディガン"},
+    {k:"features", label:"その他の特徴", type:"list", sub:false, ph:"丸眼鏡\n右手首に古い傷"} ]},
+  {key:"persona", h:"【性格】", items:[
+    {k:"surface", label:"表向き", type:"list", sub:true, ph:"人当たりがいい\n聞き上手"},
+    {k:"core", label:"本質", type:"list", sub:true, ph:"頑固\n負けず嫌い"},
+    {k:"values", label:"価値観", type:"text", ph:"約束は必ず守る"},
+    {k:"tendency", label:"行動傾向", type:"list", sub:true, ph:"困っている人を放っておけない"} ]},
+  {key:"voice", h:"【口調】", items:[
+    {k:"first", label:"一人称", type:"kv", ph:"私"},
+    {k:"second", label:"二人称", type:"kv", ph:"あなた"},
+    {k:"speech", label:"話し方", type:"list", sub:true, ph:"基本は敬語\n動揺すると早口になる"},
+    {k:"lines", label:"台詞例", type:"list", sub:true, ph:"「それ、本当ですか？」"} ]},
+  {key:"background", h:"【背景・関係】", items:[
+    {k:"past", label:"経歴", type:"text", ph:"地方から上京して三年目"},
+    {k:"position", label:"現在の立場", type:"text", ph:"屋敷に雇われたばかりの司書"},
+    {k:"relation", label:"キャラクターとの関係", type:"text", ph:"{{char}}とは初対面"},
+    {k:"special", label:"特別な設定", type:"text", ph:"古い文字が読める"} ]},
+  {key:"other", h:"【その他】", items:[
+    {k:"good", label:"得意なこと", type:"list", sub:true, ph:"料理\n速読"},
+    {k:"bad", label:"苦手なこと", type:"list", sub:true, ph:"高いところ"},
+    {k:"likes", label:"好きなもの", type:"list", sub:true, ph:"紅茶"} ]}
+];
+function extraItemsText(arr, fmt){
+  return (arr||[]).filter(x=>x.value.trim()).map(x=>{
+    const lb = x.label.trim();
+    return lb ? tplItem({label:lb, type:"text"}, x.value, fmt) : (fmt==="md" ? "- " : "") + x.value.trim().replace(/\r?\n/g, fmt==="md" ? "\n  " : "\n");
+  }).join("\n");
+}
+function profileText(fmt){
+  const u = state.userProfile; const secs = [];
+  USER_TPL.forEach(cat=>{
+    let body = [tplItems(cat.items, u.v, fmt), extraItemsText(u.extra[cat.key], fmt)].filter(Boolean).join("\n");
+    if(cat.key==="other" && u.free.trim()) body = [body, u.free.trim()].filter(Boolean).join(fmt==="md" ? "\n\n" : "\n");
+    if(body) secs.push(head(cat.h, fmt) + body);
+  });
+  u.cats.forEach(c=>{
+    const body = extraItemsText(c.items, fmt);
+    if(body) secs.push(head(`【${c.name.trim()||"追加カテゴリ"}】`, fmt) + body);
+  });
+  return rep(secs.join("\n"));
+}
+function profileUsed(){ const u = state.userProfile; return !!(Object.values(u.v).some(x=>(x||"").trim()) || Object.values(u.extra).some(a=>a.some(x=>x.value.trim())) || u.cats.some(c=>c.items.some(x=>x.value.trim())) || u.free.trim()); }
 
 /* fmt: "plain"（通常テキスト）| "md"（Markdown）。どちらも同じカード・セクション情報から組み立てる */
 const mdTitle = h => h.replace(/^【|】$/g,"");
@@ -1968,6 +2041,63 @@ function tplBlock(kind, i){
   return fold(id, `Markdownテンプレートを使う（任意）${tpl.on?`<span class="bdg clar" style="margin-left:6px">オン</span>`:""}`, inner, "tpl");
 }
 
+/* ---------- render: user talk profile ---------- */
+let upFmt = "md";
+function upMeter(){
+  const lim = UP_LIMIT[state.service]; const pl = len(profileText("plain")), md = len(profileText("md"));
+  const cur = upFmt==="md" ? md : pl; const pct = Math.min(100, cur/lim*100);
+  const cls = cur>lim?"over":(cur>lim*0.9?"near":"");
+  return `<div class="row" style="justify-content:space-between;align-items:baseline">
+      <span class="big" style="font-size:22px">${cur.toLocaleString()}<span style="font-size:13px;color:var(--muted)"> ／ ${lim.toLocaleString()}字</span></span>
+      <span class="note">${svc().name}｜通常 ${pl.toLocaleString()}・Markdown ${md.toLocaleString()}</span></div>
+    <div class="bar"><i class="${cls}" style="width:${pct}%"></i></div>
+    ${cur>lim?`<div class="msg error" style="margin-top:8px">トークプロフィールの上限（${lim.toLocaleString()}字）を ${(cur-lim).toLocaleString()}字超えています。内容は自動で削りません。</div>`:""}`;
+}
+function itemRows(path, arr){
+  return arr.map((x,j)=>`<div class="xitem">
+      <div class="row" style="gap:6px"><input type="text" data-bind="${path}.${j}.label" value="${esc(x.label)}" placeholder="項目名（例：角）" style="flex:1">
+        <button class="btn sm ghost" data-act="upmove" data-path="${path}" data-j="${j}" data-d="-1" ${j?"":"disabled"} aria-label="上へ">↑</button>
+        <button class="btn sm ghost" data-act="upmove" data-path="${path}" data-j="${j}" data-d="1" ${j<arr.length-1?"":"disabled"} aria-label="下へ">↓</button>
+        <button class="btn sm danger" data-act="updel" data-path="${path}" data-j="${j}" aria-label="削除">×</button></div>
+      <textarea data-bind="${path}.${j}.value" placeholder="内容（例：黒い湾曲した角が左右に一本ずつある）" style="min-height:56px;margin-top:6px">${esc(x.value)}</textarea>
+    </div>`).join("") + `<button class="btn sm" data-act="upadd" data-path="${path}">＋ 項目を追加</button>`;
+}
+function upBlock(){
+  const u = state.userProfile;
+  let inner = `<p class="note mt0"><b>ユーザーの立場</b>（上の欄）はプロット側の設定です。<b>トークプロフィール</b>は、会話で使う{{user}}自身の人物設定で、プロットとは別の欄に貼ります。字数もプロットとは別に数えます。</p>
+    <div class="msg warn">プロフィールに書いた性格や行動傾向は、AIが{{user}}の未入力の行動や心理を決めつける根拠にはなりません。決めつけが気になるときは、困りごとカードのRP01・RP02を使ってください。また、秘密などキャラが知らないはずの設定は、物語の中で「すでに知っている情報」として扱われないよう、関係の欄で知っている範囲を書き分けると安全です。</div>
+    <p class="note">入力のしかた：決まった項目に書く／「＋項目を追加」で項目名と内容を自分で作る／項目名なしで長く書きたいときは「その他」の自由記述へ。すべて空欄でかまいません。</p>`;
+  USER_TPL.forEach(cat=>{
+    const arr = u.extra[cat.key] || [];
+    let body = cat.items.map(it=>tplField("userProfile.v", it, u.v[it.k])).join("");
+    if(cat.key==="other") body += `<label class="f">自由記述<span class="hint">文章で自由に入力（改行はそのまま残ります）</span></label><textarea data-bind="userProfile.free" placeholder="例：人前では明るく振る舞うが、ひとりの時間がないと疲れてしまう。" style="min-height:80px">${esc(u.free)}</textarea>`;
+    body += `<div class="xbox">${itemRows(`userProfile.extra.${cat.key}`, arr)}</div>`;
+    inner += fold(`up-${cat.key}`, mdTitle(cat.h), body);
+  });
+  u.cats.forEach((c,ci)=>{
+    const body = `<label class="f mt0">カテゴリ名</label>
+      <div class="row" style="gap:6px"><input type="text" data-bind="userProfile.cats.${ci}.name" value="${esc(c.name)}" placeholder="例：特殊能力" style="flex:1">
+        <button class="btn sm ghost" data-act="upcatmove" data-j="${ci}" data-d="-1" ${ci?"":"disabled"} aria-label="上へ">↑</button>
+        <button class="btn sm ghost" data-act="upcatmove" data-j="${ci}" data-d="1" ${ci<u.cats.length-1?"":"disabled"} aria-label="下へ">↓</button></div>
+      <div class="xbox">${itemRows(`userProfile.cats.${ci}.items`, c.items)}</div>
+      <div class="row" style="margin-top:12px"><button class="btn sm danger" data-act="upcatdel" data-j="${ci}">このカテゴリを削除</button></div>`;
+    inner += fold(`up-c${ci}`, `<span data-catname="${ci}">${esc(c.name.trim()||"追加カテゴリ")}</span>`, body);
+  });
+  inner += `<div class="row" style="margin-top:10px"><button class="btn sm" data-act="upcatadd">＋ カテゴリを追加</button></div>
+    <div class="panel" style="margin-top:14px">
+      <div class="row" style="justify-content:space-between"><b style="font-size:14px">プレビュー</b>
+        <div class="seg">${[["plain","通常"],["md","Markdown"]].map(([v,l])=>`<button data-act="upfmt" data-v="${v}" aria-pressed="${upFmt===v}">${l}</button>`).join("")}</div></div>
+      <div data-upmeter style="margin-top:8px">${upMeter()}</div>
+      <pre class="tplprev" data-upprev>${esc(profileText(upFmt))}</pre>
+      <div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="upcopy" data-v="${upFmt}">${upFmt==="md"?"Markdownで":"通常テキストで"}コピー</button></div>
+    </div>`;
+  return fold("up", `ユーザーのトークプロフィール（任意）${profileUsed()?`<span class="bdg clar" style="margin-left:6px">入力あり</span>`:""}`, inner, "tpl");
+}
+function refreshUp(){
+  const pv = document.querySelector("[data-upprev]"); if(pv) pv.textContent = profileText(upFmt);
+  const m = document.querySelector("[data-upmeter]"); if(m) m.innerHTML = upMeter();
+}
+
 /* ---------- render: world ---------- */
 function renderWorld(){
   if(!state.worldTpl) state.worldTpl = newTpl();
@@ -1993,7 +2123,9 @@ function renderWorld(){
   <div class="panel">
     <label class="f mt0">カードにない指示を自由に <span class="opt">空欄可</span><span class="hint">カードの指示の後ろに続けて出力されます。</span></label>
     <textarea data-bind="extra" placeholder="例：人物の秘密は序盤で明かさず、会話や行動から少しずつ示す。">${esc(state.extra)}</textarea><div class="cnt" data-cnt="extra">${len(state.extra)}字</div>
-  </div>`;
+  </div>
+  <h2>ユーザーのトークプロフィール <small>プロットとは別に貼る</small></h2>
+  ${upBlock()}`;
 }
 
 /* ---------- render: chars ---------- */
@@ -2060,6 +2192,18 @@ function renderOut(){
   html += `<div class="msg info">ここにある欄だけがAIに届きます。紹介ページはAIに渡らないので、設定は書かないでください。</div>`;
   o.fields.forEach((f,k)=>{ html += fieldHtml(f, k, "copy"); });
   html += mdSection(o);
+  if(profileUsed()){
+    const lim = UP_LIMIT[state.service];
+    html += `<h2 style="margin-top:26px">ユーザーのトークプロフィール <small>プロットの字数とは別</small></h2>
+      <p class="note mt0">${svc().name}のトークプロフィール欄（上限${lim.toLocaleString()}字）に貼ります。プロットの欄には入れないでください。</p>`;
+    [["plain","通常テキスト"],["md","Markdown"]].forEach(([f,l])=>{
+      const t = profileText(f); const n = len(t);
+      html += `<div class="field"><div class="fhead"><div><b>${l}</b><span class="tag ${n>lim?"":"nocount"}" style="${n>lim?"background:var(--hard-soft);color:var(--hard)":""}">${n>lim?"上限超過":"プロット外"}</span></div>
+        <button class="btn sm primary" data-act="upcopy" data-v="${f}">コピー</button></div>
+        <div class="fbody">${esc(t)}</div>
+        <div class="ffoot"><span></span><span class="${n>lim?"cnt over":""}">${n}字／${lim.toLocaleString()}</span></div></div>`;
+    });
+  }
   $("#tab-out").innerHTML = html;
 }
 let mdOpen = false;
@@ -2134,6 +2278,7 @@ document.addEventListener("input", e=>{
     const mm = t.dataset.bind.match(/^chars\.(\d+)\.switches\.(\d+)\./);
     if(mm){ const p=document.querySelector(`[data-swprev="${mm[1]}.${mm[2]}"]`); if(p) p.textContent = switchText(state.chars[mm[1]].switches[mm[2]]); }
     if(/^chars\.\d+\.name$/.test(t.dataset.bind)){ const i=+t.dataset.bind.split(".")[1]; const h=document.querySelector(`[data-charhead="${i}"]`); if(h) h.textContent=charName(i); document.querySelectorAll("[data-swprev]").forEach(p=>{ const [a,b]=p.dataset.swprev.split("."); p.textContent=switchText(state.chars[a].switches[b]); }); }
+    if(/^userProfile\./.test(t.dataset.bind)){ refreshUp(); const cn = t.dataset.bind.match(/^userProfile\.cats\.(\d+)\.name$/); if(cn){ const el=document.querySelector(`[data-catname="${cn[1]}"]`); if(el) el.textContent = t.value.trim()||"追加カテゴリ"; } }
     const tp = t.dataset.bind.match(/^chars\.(\d+)\.(tpl|name)/) || (/^worldTpl\./.test(t.dataset.bind) ? [0,"w"] : null);
     if(tp){ const k = tp[1]; const el = document.querySelector(`[data-tplprev="${k}"]`); if(el) el.textContent = tplPreview(k==="w"?"w":"c", +k); }
     if(t.type==="checkbox" || t.tagName==="SELECT") render(); else renderMeter();
@@ -2169,6 +2314,14 @@ document.addEventListener("click", async e=>{
     case "editdone": editing = null; break;
     case "editreset": state.cards[id].override=""; editing=null; break;
     case "addchar": state.chars.push(newChar()); break;
+    case "upfmt": upFmt = b.dataset.v; break;
+    case "upcopy": { const t = profileText(b.dataset.v); if(!t){ toast("まだ何も入力されていません"); return; } if(await copyText(t)) toast(`トークプロフィールを${b.dataset.v==="md"?"Markdown":"通常テキスト"}でコピーしました`); return; }
+    case "upadd": { const ps=b.dataset.path; let arr=getPath(ps); if(!Array.isArray(arr)){ setPath(ps, []); arr=getPath(ps); } arr.push({label:"",value:""}); break; }
+    case "updel": { const arr=getPath(b.dataset.path); const x=arr[+b.dataset.j]; if((x.label.trim()||x.value.trim()) && !confirm(`項目「${x.label.trim()||"（項目名なし）"}」を削除しますか？`)) return; arr.splice(+b.dataset.j,1); break; }
+    case "upmove": { const arr=getPath(b.dataset.path); const j=+b.dataset.j, k=j+(+b.dataset.d); if(k<0||k>=arr.length) return; [arr[j],arr[k]]=[arr[k],arr[j]]; break; }
+    case "upcatadd": { const c=state.userProfile.cats; c.push({name:"",items:[{label:"",value:""}]}); openFolds.add("up"); openFolds.add(`up-c${c.length-1}`); break; }
+    case "upcatdel": { const c=state.userProfile.cats; const j=+b.dataset.j; const has=c[j].items.some(x=>x.label.trim()||x.value.trim()); if(!confirm(`カテゴリ「${c[j].name.trim()||"追加カテゴリ"}」${has?"と、その中の項目すべて":""}を削除しますか？`)) return; c.splice(j,1); [...openFolds].filter(k=>/^up-c\d+$/.test(k)).forEach(k=>openFolds.delete(k)); break; }
+    case "upcatmove": { const c=state.userProfile.cats; const j=+b.dataset.j, k=j+(+b.dataset.d); if(k<0||k>=c.length) return; [c[j],c[k]]=[c[k],c[j]]; const a=openFolds.has(`up-c${j}`), bb=openFolds.has(`up-c${k}`); openFolds.delete(`up-c${j}`); openFolds.delete(`up-c${k}`); if(a) openFolds.add(`up-c${k}`); if(bb) openFolds.add(`up-c${j}`); break; }
     case "delchar": if(confirm(`${charName(+b.dataset.i)}を削除しますか？`)){ state.chars.splice(+b.dataset.i,1); [...openFolds].filter(k=>k[0]==="c").forEach(k=>openFolds.delete(k)); } else return; break;
     case "addsw": state.chars[+b.dataset.i].switches.push(newSwitch()); break;
     case "delsw": state.chars[+b.dataset.i].switches.splice(+b.dataset.j,1); break;
